@@ -1,0 +1,43 @@
+ECC
+---
+RSA just doesn't cut it anymore for fast public-key crypto. Keys are large for reasonable security making it quite slow...
+Enter elliptic curves: smaller numbers are necessary and everything is faster. Maybe this library is not for embedded system usage, but now people can experiment with ECC for those use-cases where some form of RSA would be chosen otherwise.
+
+
+Hecc.Base
+-----------
+This is the Haskell-Elliptic-Curve-Cryptography-library, or maybe more appropriately atm it is only the basic math for many ECC-algorithms the user of this library may wish to implement.
+As an example the EC-variant of the Diffie-Hellman key-exchange is included which shows how the values can be computed with this library (a better variant will follow, this is just an example).
+Also included is a basic speed-benchmarking-file (point multiplication) for example on the NIST Curve P-256 (the author wants some usage results and performance-numbers... so...).
+
+
+The API
+-------
+...is not stable right now. If anybody wants to use the library in its current state for serious cryptographic uses, then by all means contact the author!
+
+The Code began as a prototyped script and has since been polished, but this is best-effort work in progress.
+
+
+pmul
+----
+Point multiplication can be done by this library using one of two algorithms: double-and-add and mongomery ladder. The latter is the default and is intended to be mostly resistant to timing attacks, the former may be faster, depending on the number it multiplies by.
+
+
+Timing Attack Resistance
+------------------------
+The point multiplication uses the montgomery ladder algorithm which should be timing attack resistant, but when mul by a number in binary form 1000..0 the operation gets strangely fast (us instead of ms) and 1000..0001 it is strangely slow (1.5 times), which hints to something fishy going on. More research will follow, but sidechannel-resistance is not totally out-of-focus. 
+Testing has given me the idea that the following-zeroes-case massively benefits from branch-prediction and the trailing-one-case throws it totally off (will have to check that on other CPUs). "More natural" numbers are safer (tested), but I wouldn't dare to say that the matter is resolved.
+P.S.: 2^N-1 does not show the cache-problem, only long rows of zeroes.
+
+
+Plan
+----
+Some algorithms using these primitives will likely follow (ECDH, ECDSA, OpenPGP; also: better versions of the primitives).
+Speed is a good goal, may have some more improvements in the future.
+A testing suite is on the list.
+Hyperelliptic Curves... maybe.
+
+
+Motivation
+----------
+This is a side-project from which other people may benefit. Due to time-constraints, I can't work as much on it as I would like. If you use/like it or want to make some criticism heard, please write me an email.
