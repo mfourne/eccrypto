@@ -3,6 +3,8 @@ Version:             0.5.0
 Synopsis:	     Elliptic Curve Cryptography for Haskell
 Description:         Pure math & algorithms for Elliptic Curve Cryptography in Haskell. 
 		     The implementation should be timing-attack resistant, pure Haskell and reasonably fast.
+		     This library was formerly known as "hecc", but since this would imply Hyperelliptic ECC, the name was changed. 
+		     Also the scope was changed to be the base for higher lirbaries by selecting "best" internal formats.
 License:             BSD3
 License-file:        COPYING
 Copyright:	     (c) Marcel Fourné, 2009-2014

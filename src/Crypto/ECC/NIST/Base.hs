@@ -7,7 +7,7 @@
 -- Stability   :  experimental
 -- Portability :  Good
 --
--- ECC Base algorithms & point formats for NIST Curves as specified in TODO
+-- ECC Base algorithms & point formats for NIST Curves as specified in NISTReCur.pdf
 -- 
 -----------------------------------------------------------------------------
 
@@ -37,18 +37,18 @@ import Data.Typeable(Typeable)
 
 -- |all Elliptic Curves, the parameters being the BitLength L, A, B and P
 data EC a where
-     -- the Integer Curves, having the form y^2=x^3+A*x+B mod P (short Weierstrass); relevant for "ison"
-     ECi :: CT.BitLength -> Integer -> Integer -> Integer -> Integer -> EC Integer
+     -- the Integer Curves, having the form y^2=x^3-3*x+B mod P (short Weierstrass); relevant for "ison"
+     ECi :: CT.BitLength -> Integer -> Integer -> Integer -> EC Integer
      -- the Curves on F2, having the form  y^2+x*y=x^3+a*x^2+b mod P (short Weierstrass); relevant for "ison"
-     ECb :: CT.BitLength -> F2.F2 -> F2.F2 -> F2.F2 -> F2.F2 -> EC F2.F2
+     ECb :: CT.BitLength -> Int -> F2.F2 -> F2.F2 -> Integer -> EC F2.F2
      deriving(Typeable)
 instance Eq (EC a) where
-  (ECi l a b p r) == (ECi l' a' b' p' r') = l==l' && a==a' && b==b' && p==p' && r==r'
+  (ECi l b p r) == (ECi l' b' p' r') = l==l' && b==b' && p==p' && r==r'
   (ECb l a b p r) == (ECb l' a' b' p' r') = l==l' && a==a' && b==b' && p==p' && r==r'
   _ == _ = False
 instance Show (EC a) where
-  show (ECi l a b p r) = "Curve with length" ++ show l ++", y^2=x^3+" ++ show a ++ "*x+" ++ show b ++ " mod " ++ show p ++ " and group order " ++ show r ++ "."
-  show (ECb l a b p r) = "Curve with length" ++ show l ++", y^2=x^3+" ++ show (F2.toInteger a) ++ "*x+" ++ show (F2.toInteger b) ++ " mod " ++ show (F2.toInteger p) ++ " and group order " ++ show (F2.toInteger r)  ++ "."
+  show (ECi l b p r) = "Curve with length" ++ show l ++", y^2=x^3+" ++ "*x+" ++ show b ++ " mod " ++ show p ++ " and group order " ++ show r ++ "."
+  show (ECb l a b p r) = "Curve with length" ++ show l ++", y^2=x^3+" ++ show a ++ "*x+" ++ show (F2.toInteger b) ++ " mod " ++ show (F2.toInteger p) ++ " and group order " ++ show r  ++ "."
 
 -- every point has a curve on which it is valid (has to be tested manually), plus possibly some coordinates
 -- parametrised by the kind of numbers one which it may be computed
@@ -71,7 +71,7 @@ instance Show (ECPF a) where
 
 -- |generic getter, returning the affine x-value
 getxA :: EC a -> ECPF a -> a
-getxA (ECi _ _ _ p _) (ECPp x _ z) = 
+getxA (ECi _ _ p _) (ECPp x _ z) = 
   if z == 0
      then 0
      else (x * (modinv z p)) `mod` p
@@ -84,7 +84,7 @@ getxA _ _ = undefined
 
 -- |generic getter, returning the affine y-value
 getyA :: EC a -> ECPF a -> a
-getyA (ECi _ _ _ p _) (ECPp _ y z) = 
+getyA (ECi _ _ p _) (ECPp _ y z) = 
   if z == 0
      then 1
      else (y * (modinv z p)) `mod` p
@@ -97,8 +97,8 @@ getyA _ _ = undefined
 
 -- |add an elliptic point onto itself, base for padd a a
 pdouble :: EC a -> ECPF a -> ECPF a
-pdouble (ECi _ _ _ p _) (ECPp x1 y1 z1) = 
---  let a = (alpha*z1^(2::Int)+3*x1^(2::Int)) `mod` p
+pdouble (ECi _ _ p _) (ECPp x1 y1 z1) = 
+--  let a = ((-3)*z1^(2::Int)+3*x1^(2::Int)) `mod` p
   let a = (3*(x1-z1)*(x1+z1)) `mod` p -- since alpha == -3 on NIST-curves
       b = (y1*z1) `mod` p
       c = (x1*y1*b) `mod` p
@@ -112,7 +112,7 @@ pdouble (ECb _ alpha _ p _) (ECPpF2 x1 y1 z1) =
       b = (a + (y1 * z1)) `F2.mod` p
       c = (x1 * z1) `F2.mod` p
       d = (c `F2.pow` 2) `F2.mod` p
-      e = ((b `F2.pow` 2) + (b * c) + (alpha * d)) `F2.mod` p
+      e = ((b `F2.pow` 2) + (b * c) + (if alpha==1 then d else 0)) `F2.mod` p
       x3 = (c * e) `F2.mod` p
       y3 = (((b + c) * e) + ((a `F2.pow` 2) * c)) `F2.mod` p
       z3 = (c * d) `F2.mod` p
@@ -122,7 +122,7 @@ pdouble _ _ = undefined
 
 -- |add 2 elliptic points
 padd :: EC a -> ECPF a -> ECPF a -> ECPF a
-padd curve@(ECi _ _ _ p _) p1@(ECPp x1 y1 z1) p2@(ECPp x2 y2 z2)
+padd curve@(ECi _ _ p _) p1@(ECPp x1 y1 z1) p2@(ECPp x2 y2 z2)
         | x1==x2,y1==(-y2) = ECPp 0 1 0 -- Point at Infinity
         | p1==p2 = pdouble curve p1
         | otherwise = 
@@ -141,7 +141,7 @@ padd curve@(ECb _ alpha _ p _) p1@(ECPpF2 x1 y1 z1) p2@(ECPpF2 x2 y2 z2)
                 b = ((x1 * z2)  +  (z1 * x2)) `F2.mod` p
                 c = (b `F2.pow` 2) `F2.mod` p
                 d = (z1 * z2) `F2.mod` p
-                e = ((((a `F2.pow` 2) + (a * b) + (alpha * c)) * d) + (b * c)) `F2.mod` p
+                e = ((((a `F2.pow` 2) + (a * b) + (if alpha==1 then c else 0)) * d) + (b * c)) `F2.mod` p
                 x3 = (b * e) `F2.mod` p
                 y3 = (((c * ((a * x1) + (y1 * b))) * z2) + ((a + b) * e)) `F2.mod` p
                 z3 = ((b `F2.pow` 3) * d) `F2.mod` p
@@ -151,14 +151,14 @@ padd _ _ _ = undefined
 
 -- |"generic" verify, if generic ECP is on EC via getxA and getyA
 ison :: EC a -> ECPF a -> Bool
-ison curve@(ECi _ alpha beta p _) pt@(ECPp _ _ _) = 
+ison curve@(ECi _ beta p _) pt@(ECPp _ _ _) = 
   let x = getxA curve pt
       y = getyA curve pt
-  in (y^(2::Int)) `mod` p == (x^(3::Int)+alpha*x+beta) `mod` p
+  in (y^(2::Int)) `mod` p == (x^(3::Int)-3*x+beta) `mod` p
 ison curve@(ECb _ alpha beta p _) pt@(ECPpF2 _ _ _) = 
   let x = getxA curve pt
       y = getyA curve pt
-  in ((y `F2.pow` 2) + (x * y)) `F2.mod` p == ((x `F2.pow` 3) + (alpha * (x `F2.pow` 2)) + beta) `F2.mod` p
+  in ((y `F2.pow` 2) + (x * y)) `F2.mod` p == ((x `F2.pow` 3) + (if alpha==1 then (x `F2.pow` 2) else 0) + beta) `F2.mod` p
 ison _ _ = undefined
 {-# INLINABLE ison #-}
 
@@ -186,7 +186,7 @@ pmul = montgladder
 
 -- montgomery ladder, timing-attack-resistant (except for caches...)
 montgladder :: EC a -> ECPF a -> Integer -> ECPF a
-montgladder curve@(ECi _ _ _ p _) b@(ECPp _ _ _) k'  = 
+montgladder curve@(ECi _ _ p _) b@(ECPp _ _ _) k'  = 
   let k = k' `mod` (p - 1)
       ex p1 p2 i
         | i < 0 = p1
