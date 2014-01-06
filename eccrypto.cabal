@@ -31,3 +31,7 @@ Library
     Crypto.ECC.NIST.StandardCurves
   ghc-options:
     -Wall
+
+source-repository head
+  type:     git
+  location: https://github.com/mfourne/hs-eccrypto.git

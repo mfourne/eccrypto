@@ -7,9 +7,13 @@
 -- Stability   :  experimental
 -- Portability :  Good
 -- 
--- ECC NIST Standard Curves, taken from NISTReCur.pdf
+-- ECC NIST Standard Curves, taken from NISTReCur.pdf[http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf]
 -- NB: The rigidity of the curve parameters may be manipulatable, for more
 --     information see http://safecurves.cr.yp.to/rigid.html
+--     Therein mentioned are only the NIST Prime Curves, because...
+-- NB F2: Read up on solving the Discrete Logarithm Problem in fields of small characteristic (i.e. here: Binary Curves)
+--        and then decide if the results are relevant to you.
+-- Recommendation: If your need NIST Curves and you do not know which one, use the Prime Curves.
 --
 -----------------------------------------------------------------------------
 
@@ -32,7 +36,7 @@ data StandardCurve =
   | StandardCurveF2 {stdcF_l::BitLength,stdcF_p::F2.F2,stdcF_r::Integer,stdcF_a::Int,stdcF_b::F2.F2,stdcF_xp::F2.F2,stdcF_yp::F2.F2}
     deriving (Typeable)
 
--- Curves over Prime Fields, NIST variety
+-- Nist variety Curves over Prime Fields (large characteristic: p)
 
 -- | NIST Prime Curve P-192
 p192:: StandardCurve
@@ -88,6 +92,8 @@ p521 = StandardCurve {
          stdc_xp = 2661740802050217063228768716723360960729859168756973147706671368418802944996427808491545080627771902352094241225065558662157113545570916814161637315895999846,
          stdc_yp = 3757180025770020463545507224491183603594455134769762486694567779615544477440556316691234405012945539562144444537289428522585666729196580810124344277578376784
        }
+
+-- Nist variety Curves over Binary Fields (small characteristic: 2; please refer to the new results of solving the Discrete Logarithm Problem in fields of small characterstic, "Cryptopocalypse", Joux et al.)
 
 -- | NIST Binary Field Curve K-283
 k283:: StandardCurve
