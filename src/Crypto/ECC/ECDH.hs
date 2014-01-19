@@ -25,4 +25,5 @@ import Crypto.ECC.NIST.Base
 -- q = pmul G d
 -- | basic ecdh for testing
 basicecdh :: EC Integer -> Integer -> ECPF Integer -> Integer
-basicecdh c dA qB = getxA c $ pmul c qB dA
+basicecdh c dA qB = let (x,_) = affine c $ pmul c qB dA
+                    in x

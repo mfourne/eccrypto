@@ -1,5 +1,5 @@
 Name:                eccrypto
-Version:             0.5.0
+Version:             0.1.0
 Synopsis:	     Elliptic Curve Cryptography for Haskell
 Description:         Pure math & algorithms for Elliptic Curve Cryptography in Haskell. 
 		     The implementation should be timing-attack resistant, pure Haskell and reasonably fast.
@@ -18,13 +18,11 @@ Data-Files:	     README
 Extra-Source-Files:  src/bench.hs
 
 Library
-  hs-source-dirs:	
-    src
-  Build-Depends:  	
-    base >= 4 && < 5,
-    cereal,
-    crypto-api,
-    hF2
+  hs-source-dirs: src
+  Build-Depends: base >= 4 && < 5
+               , cereal
+               , crypto-api
+               , vector
   Exposed-modules:	
     Crypto.ECC.NIST.Base
     Crypto.ECC.ECDH
