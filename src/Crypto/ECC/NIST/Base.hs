@@ -52,6 +52,63 @@ zero l = V.replicate (l `mod` (wordMax + 1)) 0
 -- TODO: be less general for much speed and timing attack resistance (except caches maybe)
 
 -- 
+-- TEMPORARY TRANSITION FROM INTEGER TO FPRIME, THESE ARE TESTCASES
+--
+
+fieq :: Integer -> Integer -> Bool
+fieq !a !b = a == b
+{-# INLINABLE fieq #-}
+
+fiplus :: Integer -> Integer -> Integer -> Integer
+fiplus p a b = firedc p (a + b)
+{-# INLINABLE fiplus #-}
+
+fiminus :: Integer -> Integer -> Integer -> Integer
+fiminus p a b = firedc p (a - b)
+{-# INLINABLE fiminus #-}
+
+fineg :: Integer -> Integer -> Integer
+fineg !p !a = firedc p (-a)
+{-# INLINABLE fineg #-}
+
+fitestBit :: Integer -> Int -> Bool
+fitestBit !a !i = B.testBit a i
+{-# INLINABLE fitestBit #-}
+
+firedc :: Integer -> Integer -> Integer
+firedc p a = a `mod` p
+{-# INLINABLE firedc #-}
+
+fimul :: Integer -> Integer -> Integer -> Integer
+fimul p a b = firedc p (a * b)
+{-# INLINABLE fimul #-}
+
+fisquare :: Integer -> Integer -> Integer
+fisquare p a = firedc p (a ^ (2::Int))
+{-# INLINABLE fisquare #-}
+
+fipow :: (B.Bits a, Integral a) => Integer -> Integer -> a -> Integer
+fipow p a k = let binlog = log2len k
+                  ex p1 p2 i
+                    | i < 0 = p1
+                    | B.testBit k i == False = firedc p $ ex (fisquare p p1) (fimul p p1 p2) (i - 1)
+                    | otherwise              = firedc p $ ex (fimul p p1 p2) (fisquare p p2) (i - 1)
+              in firedc p $ ex a (fisquare p a) (binlog - 2)
+{-# INLINABLE fipow #-}
+
+fiinv :: Integer -> Integer -> Integer
+fiinv !p !a = fipow p a ((fitoInteger 0 p) - 2)
+{-# INLINABLE fiinv #-}
+
+fifromInteger :: Int -> Integer -> Integer
+fifromInteger _ !a = fromInteger a
+{-# INLINABLE fifromInteger #-}
+
+fitoInteger :: Int -> Integer -> Integer
+fitoInteger _ !a = toInteger a
+{-# INLINABLE fitoInteger #-}
+
+-- 
 -- THESE ARE THE FUNCTIONS FOR F_{PRIME}
 --
 
@@ -91,13 +148,13 @@ fppow :: FPrime -> FPrime -> Integer -> FPrime
 fppow p a k = undefined
 
 fpinv :: FPrime -> FPrime -> FPrime
-fpinv p a = fppow p a ((fptoInteger p) - 2)
+fpinv p@(FPrime l _ _) a = fppow p a ((fptoInteger l p) - 2)
 
-fpfromInteger :: Integer -> FPrime
-fpfromInteger a = undefined
+fpfromInteger :: Int -> Integer -> FPrime
+fpfromInteger l a = undefined
 
-fptoInteger :: FPrime -> Integer
-fptoInteger a = undefined
+fptoInteger :: Int -> FPrime -> Integer
+fptoInteger l a = undefined
 
 -- 
 -- THESE ARE THE FUNCTIONS FOR F_{2^{E}}
@@ -153,8 +210,8 @@ f2testBit !(F2 !la !va) !i =
 -- TODO: shortening ok?
 f2redc :: F2 -> F2 -> F2
 f2redc !p@(F2 !lp !vp) !a@(F2 !la _)
-  | f2eq p (f2fromInteger 0) = a
-  | f2eq p (f2fromInteger 1) = f2fromInteger 0
+  | f2eq p (f2fromInteger lp 0) = a
+  | f2eq p (f2fromInteger lp 1) = f2fromInteger lp 0
   | otherwise = let lvp = V.length vp
                     pseudo = F2 lvp $ V.replicate lvp 0
                     fun !z@(F2 _ !v) i | i >= lp = if f2testBit z (i - 1)
@@ -183,8 +240,8 @@ f2square :: F2 -> F2 -> F2
 f2square p a = f2redc p $ f2mul p a a
 
 f2pow :: F2 -> F2 -> Integer -> F2
-f2pow !p !a !k | k < 0 = error "negative exponent for the power function on F2"
-               | k == 0 = f2fromInteger 1
+f2pow !p@(F2 l _) !a !k | k < 0 = error "negative exponent for the power function on F2"
+               | k == 0 = f2fromInteger l 1
                | k == 1 = a
                | k == 2 = f2redc p $ f2square p a
                | k == 3 = f2redc p $ f2mul p (f2square p a) a
@@ -200,15 +257,16 @@ f2inv p a = f2pow p a ((f2toInteger p) - 2)
 
 -- | this is a chunked converter from Integer into eccrypto native format
 -- | TODO: implement low-level Integer conversion
-f2fromInteger :: Integer -> F2
-f2fromInteger !i = 
+-- | TODO: length max l with cutoff, min l but with zero-padding in front
+f2fromInteger :: Int -> Integer -> F2
+f2fromInteger !l !i = 
     let i' = abs i -- we take only non-negative Integers
         binlog = log2len i'
         helper a = 
           if a <= wordMax then V.singleton $ fromInteger a
           else let (d,rest) = quotRem a (wordMax + 1)
                in  (V.singleton $ fromInteger rest) V.++ (helper d)
-    in F2 binlog (helper i')
+    in F2 l (helper i')
        
 -- | this is a chunked converter from eccrypto native format into Integer
 -- | TODO: implement low-level Integer conversion
@@ -279,13 +337,13 @@ instance Show (ECPF a) where
 -- | generic getter, returning the affine x and y-value
 affine :: EC a -> ECPF a -> (a,a)
 affine (ECi _ _ p _) (ECPp x y z) = 
-  if z == 0
-     then (0,0)
-     else let z' = modinv z p
-          in ((x * z') `mod` p,(y * z') `mod` p)
-affine (ECb _ _ _ p _) (ECPpF2 x y z) = 
-  if f2eq z $ f2fromInteger 0
-     then (f2fromInteger 0,f2fromInteger 0)
+  if z == fifromInteger 0 0
+     then (fifromInteger 0 0,fifromInteger 0 0)
+     else let z' = fiinv p z
+          in (fimul p x z',fimul p y z')
+affine (ECb l _ _ p _) (ECPpF2 x y z) = 
+  if f2eq z $ f2fromInteger l 0
+     then (f2fromInteger l 0,f2fromInteger l 0)
      else let z' = f2inv p z
           in (f2redc p (f2mul p x z') ,f2redc p (f2mul p y z'))
 affine _ _ = error "affine parameters of different type"
@@ -294,25 +352,25 @@ affine _ _ = error "affine parameters of different type"
 -- | add an elliptic point onto itself, base for padd a a
 pdouble :: EC a -> ECPF a -> ECPF a
 pdouble (ECi _ _ p _) p1@(ECPp x1 y1 z1) =
-  if x1==0 && y1==1 && z1==0
+  if x1==(fifromInteger 0 0) && y1==(fifromInteger 0 1) && z1==(fifromInteger 0 0)
   then p1
   else -- let a = ((-3)*z1^(2::Int)+3*x1^(2::Int)) `mod` p
-       let a = (3*(x1-z1)*(x1+z1)) `mod` p -- since alpha == -3 on NIST-curves
-           b = (y1*z1) `mod` p
-           c = (x1*y1*b) `mod` p
-           d = (a^(2::Int)-8*c) `mod` p
-           x3 = (2*b*d) `mod` p
-           y3 = (a*(4*c-d)-8*y1^(2::Int)*b^(2::Int)) `mod` p
-           z3 = (8*b^(3::Int)) `mod` p
+       let a = (fimul p 3 $ fimul p (fiminus p x1 z1) (fiplus p x1 z1)) -- since alpha == -3 on NIST-curves
+           b = fimul p y1 z1
+           c = fimul p x1 $ fimul p y1 b
+           d = fiminus p (fipow p a (2::Int)) (fimul p 8 c)
+           x3 = fimul p 2 $ fimul p b d
+           y3 = fiminus p (fimul p a (fiminus p (fimul p 4 c) d)) (fimul p (fimul p 8 (fipow p y1 (2::Int))) (fipow p b (2::Int)))
+           z3 = fimul p 8 (fipow p b (3::Int))
        in ECPp x3 y3 z3
-pdouble (ECb _ alpha _ p _) p1@(ECPpF2 x1 y1 z1) =
-  if (f2eq x1 (f2fromInteger 0)) && (f2eq y1 (f2fromInteger 1)) && (f2eq z1 (f2fromInteger 0))
+pdouble (ECb l alpha _ p _) p1@(ECPpF2 x1 y1 z1) =
+  if (f2eq x1 (f2fromInteger l 0)) && (f2eq y1 (f2fromInteger l 1)) && (f2eq z1 (f2fromInteger l 0))
   then p1
   else let a = f2redc p (f2pow p x1 2)
            b = f2redc p (f2plus a (f2mul p y1 z1))
            c = f2redc p (f2mul p x1 z1)
            d = f2redc p (f2pow p c 2)
-           e = f2redc p (f2plus (f2plus (f2pow p b 2) (f2mul p b c)) (if alpha==1 then d else f2fromInteger 0))
+           e = f2redc p (f2plus (f2plus (f2pow p b 2) (f2mul p b c)) (if alpha==1 then d else f2fromInteger l 0))
            x3 = f2redc p (f2mul p c e)
            y3 = f2redc p (f2plus (f2mul p (f2plus b c) e) (f2mul p (f2pow p a 2) c))
            z3 =  f2redc p (f2mul p c d)
@@ -323,29 +381,29 @@ pdouble _ _ = error "pdouble parameters of different type"
 -- | add 2 elliptic points
 padd :: EC a -> ECPF a -> ECPF a -> ECPF a
 padd curve@(ECi _ _ p _) p1@(ECPp x1 y1 z1) p2@(ECPp x2 y2 z2)
-        | x1==x2 && y1==(-y2) && z1==z2 = ECPp 0 1 0 -- Point at Infinity
-        | x1==0 && y1==1 && z1==0 = p2
-        | x2==0 && y2==1 && z2==0 = p1
+        | x1==x2 && y1==fineg p y2 && z1==z2 = ECPp (fifromInteger 0 0) (fifromInteger 0 1) (fifromInteger 0 0) -- Point at Infinity
+        | x1==(fifromInteger 0 0) && y1==(fifromInteger 0 1) && z1==(fifromInteger 0 0) = p2
+        | x2==(fifromInteger 0 0) && y2==(fifromInteger 0 1) && z2==(fifromInteger 0 0) = p1
         | p1==p2 = pdouble curve p1
         | otherwise = 
-            let a = (y2*z1 - y1*z2) `mod` p
-                b = (x2*z1 - x1*z2) `mod` p
-                c = (a^(2::Int)*z1*z2 - b^(3::Int) - 2*b^(2::Int)*x1*z2) `mod` p
-                x3 = (b*c) `mod` p
-                y3 = (a*(b^(2::Int)*x1*z2-c)-b^(3::Int)*y1*z2) `mod` p
-                z3 = (b^(3::Int)*z1*z2) `mod` p
+            let a = fiminus p (fimul p y2 z1) (fimul p y1 z2)
+                b = fiminus p (fimul p x2 z1) (fimul p x1 z2)
+                c = fiminus p (fimul p (fipow p a (2::Int)) $ fimul p z1 z2) $ fiminus p (fipow p b (3::Int)) (fimul p 2 $ fimul p (fipow p b (2::Int)) $ fimul p x1 z2)
+                x3 = fimul p b c
+                y3 = fiminus p (fimul p a (fiminus p (fimul p (fipow p b (2::Int)) $ fimul p x1 z2) c)) (fimul p (fipow p b (3::Int)) $ fimul p y1 z2)
+                z3 = (fimul p (fipow p b (3::Int)) $ fimul p z1 z2)
             in ECPp x3 y3 z3
-padd curve@(ECb _ alpha _ p _) p1@(ECPpF2 x1 y1 z1) p2@(ECPpF2 x2 y2 z2)
-        | (f2eq x1 x2) && (f2eq y1 (f2plus x2 y2)) && (f2eq z1 z2) = ECPpF2 (f2fromInteger 0) (f2fromInteger 1) (f2fromInteger 0)  -- Point at Infinity
-        | (f2eq x1 $ f2fromInteger 0) && (f2eq y1 $ f2fromInteger 1) && (f2eq z1 $ f2fromInteger 0) = p2
-        | (f2eq x2 $ f2fromInteger 0) && (f2eq y2 $ f2fromInteger 1) && (f2eq z2 $ f2fromInteger 0) = p1
+padd curve@(ECb l alpha _ p _) p1@(ECPpF2 x1 y1 z1) p2@(ECPpF2 x2 y2 z2)
+        | (f2eq x1 x2) && (f2eq y1 (f2plus x2 y2)) && (f2eq z1 z2) = ECPpF2 (f2fromInteger l 0) (f2fromInteger l 1) (f2fromInteger l 0)  -- Point at Infinity
+        | (f2eq x1 $ f2fromInteger l 0) && (f2eq y1 $ f2fromInteger l 1) && (f2eq z1 $ f2fromInteger l 0) = p2
+        | (f2eq x2 $ f2fromInteger l 0) && (f2eq y2 $ f2fromInteger l 1) && (f2eq z2 $ f2fromInteger l 0) = p1
         | p1==p2 = pdouble curve p1
         | otherwise = 
             let a = f2redc p (f2plus (f2mul p y1 z2) (f2mul p z1 y2))
                 b = f2redc p (f2plus (f2mul p x1 z2) (f2mul p z1 x2))
                 c = f2redc p (f2pow p b 2)
                 d = f2redc p (f2mul p z1 z2)
-                e = f2redc p (f2plus (f2plus (f2plus (f2pow p a 2) (f2mul p a b)) (f2mul p (if alpha==1 then c else f2fromInteger 0) d)) (f2mul p b c))
+                e = f2redc p (f2plus (f2plus (f2plus (f2pow p a 2) (f2mul p a b)) (f2mul p (if alpha==1 then c else f2fromInteger l 0) d)) (f2mul p b c))
                 x3 = f2redc p (f2mul p b e)
                 y3 = f2redc p (f2plus (f2mul p (f2mul p c (f2plus (f2mul p a x1) (f2mul p y1 b))) z2) (f2mul p (f2plus a b) e))
                 z3 = f2redc p (f2mul p (f2pow p b 3) d)
@@ -357,12 +415,12 @@ padd _ _ _ = error "padd parameters of different type"
 ison :: EC a -> ECPF a -> Bool
 ison curve@(ECi _ beta p _) pt@(ECPp _ _ _) = 
   let (x,y) = affine curve pt
-  in (y^(2::Int)) `mod` p == (x^(3::Int)-3*x+beta) `mod` p
-ison curve@(ECb _ alpha beta p _) pt@(ECPpF2 _ _ _) = 
+  in fieq (fipow p y (2::Int)) (fiminus p (fipow p x (3::Int)) (fiplus p (fimul p 3 x) beta))
+ison curve@(ECb l alpha beta p _) pt@(ECPpF2 _ _ _) = 
   let (x,y) = affine curve pt
   in f2eq
      (f2redc p (f2plus (f2pow p y 2) (f2mul p x y)))
-     (f2redc p (f2plus (f2plus (f2pow p x 3) (if alpha==1 then (f2pow p x 2) else f2fromInteger 0)) beta))
+     (f2redc p (f2plus (f2plus (f2pow p x 3) (if alpha==1 then (f2pow p x 2) else f2fromInteger l 0)) beta))
 ison _ _ = error "ison parameters of different type"
 {-# INLINABLE ison #-}
 
@@ -381,16 +439,16 @@ modinv a m = let (x,y,_) = eeukl a m
              in if x == 1 
                 then mod y m
                 else error "no modular inverse on Integer found"
--- modinv a m = Just $ (a ^ (m - 2)) `mod` m
+-- modinv a m = (a ^ (m - 2)) `mod` m
 {-# INLINABLE modinv #-}
 
 -- | Point Multiplication. The implementation is a montgomery ladder, which should be timing-attack-resistant (except for caches...)
 pmul :: EC a -> ECPF a -> Integer -> ECPF a
 pmul curve@(ECi _ _ p _) b@(ECPp _ _ _) k'  = 
-  let k = k' `mod` (p - 1)
+  let k = firedc (fiminus p p 1) k'
       ex p1 p2 i
         | i < 0 = p1
-        | not (B.testBit k i) = ex (pdouble curve p1) (padd curve p1 p2) (i - 1)
+        | not (fitestBit k i) = ex (pdouble curve p1) (padd curve p1 p2) (i - 1)
         | otherwise           = ex (padd curve p1 p2) (pdouble curve p2) (i - 1)
   in ex b (pdouble curve b) ((log2len k) - 2)
 pmul curve@(ECb _ _ _ p _) b@(ECPpF2 _ _ _) k'  = -- TODO: Broken, FIXME
@@ -404,6 +462,6 @@ pmul _ _ _ = error "pmul parameters of different type"
 {-# INLINABLE pmul #-}
 
 -- internal function returning the binary length of an Integer
-log2len :: Integer -> Int
+log2len :: (Integral a, B.Bits a) => a -> Int
 log2len n = length (takeWhile (<=n) (iterate (*2) 1))
 {-# INLINABLE log2len #-}
