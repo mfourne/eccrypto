@@ -33,35 +33,42 @@ import Prelude (Eq,Num(..),Show,(==),(&&),Integer,Int,show,Bool(False,True),(++)
 import qualified Data.Bits as B (Bits(..),testBit)
 import Crypto.Common (log2len)
 
+-- | most trivial (==) wrapper
 fieq :: Integer -> Integer -> Bool
 fieq !a !b = a == b
 {-# INLINABLE fieq #-}
 
+-- | (+) in the field
 fiplus :: Integer -> Integer -> Integer -> Integer
 fiplus !p !a !b = firedc p (a + b)
 {-# INLINABLE fiplus #-}
 
+-- | (-) in the field
 fiminus :: Integer -> Integer -> Integer -> Integer
 fiminus p a b = firedc p (a - b)
 {-# INLINABLE fiminus #-}
 
+-- | negation in the field
 fineg :: Integer -> Integer -> Integer
 fineg !p !a = firedc p (-a)
 {-# INLINABLE fineg #-}
 
+-- | modular reduction, a simple wrapper around mod
 firedc :: Integer -> Integer -> Integer
 firedc !p !a = a `mod` p
 {-# INLINABLE firedc #-}
 
+-- | field multiplication, a * b `mod` p
 fimul :: Integer -> Integer -> Integer -> Integer
 fimul !p !a !b = firedc p (a * b)
 {-# INLINABLE fimul #-}
 
+-- | simple squaring in the field
 fisquare :: Integer -> Integer -> Integer
 fisquare p a = firedc p (a ^ (2::Int))
 {-# INLINABLE fisquare #-}
 
--- has been extended euclid based (which is succeptible to timing attacks), should be better now
+-- | the power function in the field
 fipow :: (B.Bits a, Integral a) => Integer -> Integer -> a -> Integer
 fipow !p !a !k = let binlog = log2len k
                      ex p1 p2 i
@@ -70,6 +77,7 @@ fipow !p !a !k = let binlog = log2len k
                        | otherwise           = firedc p $ ex (fimul p p1 p2) (fisquare p p2) (i - 1)
                  in firedc p $ ex a (fisquare p a) (binlog - 2)
 
+-- | field inversion
 fiinv :: Integer -> Integer -> Integer
 fiinv !p !a = fipow p a ((fitoInteger p) - 2)
 

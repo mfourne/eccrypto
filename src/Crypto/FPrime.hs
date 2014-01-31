@@ -18,6 +18,8 @@
 module Crypto.FPrime ( FPrime()
                      , fpeq
                      , fpplus
+                     , fpminus
+                     , fpneg
                      , fpshift
                      , fpmul
                      , fptestBit
