@@ -24,7 +24,7 @@ module Crypto.ECC.NIST.StandardCurves
     where
 
 import Prelude(Int,Integer,fromInteger)
-import Crypto.ECC.NIST.Base
+import Crypto.ECC.NIST.Base (F2,f2fromInteger)
 import Crypto.Types (BitLength)
 import Data.Typeable(Typeable)
 

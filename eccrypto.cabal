@@ -25,7 +25,7 @@ Library
                , vector
   Exposed-modules:	
     Crypto.ECC.NIST.Base
-    Crypto.ECC.ECDH
+    Crypto.ECC.NIST.ECDH
     Crypto.ECC.NIST.StandardCurves
   ghc-options:
     -Wall

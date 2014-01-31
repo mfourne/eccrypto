@@ -19,14 +19,6 @@ import Control.Monad.Random
 import Criterion
 import Criterion.Main
 
-testfkt:: EC Integer -> ECPF Integer -> Integer -> Int -> ECPF Integer
-testfkt c b k' n  = pmul c b ((toInteger (n-n)) + k')
-
-testfktF2:: EC F2 -> ECPF F2 -> Integer -> Int -> ECPF F2
-testfktF2 c b k' n  = pmul c b ((toInteger (n-n)) + k')
-
-
-
 main::IO ()
 main = do
   let c1 = ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r p256)
@@ -46,7 +38,17 @@ main = do
   k13' <- evalRandIO $ getRandomR (1,stdc_p p256)
   k21' <- evalRandIO $ getRandomR (1,stdc_p p521)
   k34' <- evalRandIO $ getRandomR (1, f2toInteger $ stdcF_p b283)
-  defaultMain [ bench "NIST P-256" $ whnf (testfkt c1 p1 k13') 10
-              , bench "NIST P-521" $ whnf (testfkt c2 p2 k21') 10
---              , bench "NIST B-283" $ whnf (testfktF2 c3 p3 k34') 10
+  defaultMain [bgroup "NIST P-256" [ bench "pmul by random value" $ whnf (pmul c1 p1) k13'
+                                   , bench "pmul by 2^254" $ whnf (pmul c1 p1 ) (2^254)
+                                   , bench "pmul by top 5 bits" $ whnf (pmul c1 p1) k11'
+                                   , bench "pmul by 50bit pattern" $ whnf (pmul c1 p1) k12'
+                                   ]
+{-               
+              , bgroup "NIST P-521" [ bench "pmul by random value" $ whnf (pmul c2 p2) k21'
+                                    ]
+-- -}
+{-
+              , bgroup "NIST B-283" [ bench "pmul by random value" $ whnf (pmul c3 p3) k34'
+                                    ]
+-- -}
               ]
