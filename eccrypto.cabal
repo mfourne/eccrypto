@@ -26,7 +26,10 @@ Library
                , cereal
                , crypto-api
                , vector
-  Exposed-modules:	
+  Exposed-modules:
+    Crypto.Common
+    Crypto.F2
+    Crypto.Fi
     Crypto.ECC.NIST.Base
     Crypto.ECC.NIST.ECDH
     Crypto.ECC.NIST.StandardCurves

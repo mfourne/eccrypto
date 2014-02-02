@@ -15,17 +15,18 @@
 {-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
 {-# LANGUAGE PatternGuards, BangPatterns #-}
 
-module Crypto.Fi ( fieq
-                 , fiplus
-                 , fiminus
-                 , fineg
-                 , fimul
-                 , firedc
-                 , fisquare
-                 , fipow
-                 , fiinv
-                 , fifromInteger
-                 , fitoInteger
+module Crypto.Fi ( FPrime
+                 , fpeq
+                 , fpplus
+                 , fpminus
+                 , fpneg
+                 , fpmul
+                 , fpredc
+                 , fpsquare
+                 , fppow
+                 , fpinv
+                 , fpfromInteger
+                 , fptoInteger
                  )
        where
 
@@ -33,60 +34,63 @@ import Prelude (Eq,Num(..),Show,(==),(&&),Integer,Int,show,Bool(False,True),(++)
 import qualified Data.Bits as B (Bits(..),testBit)
 import Crypto.Common (log2len)
 
+-- | a simple wrapper to ease transition
+type FPrime = Integer
+
 -- | most trivial (==) wrapper
-fieq :: Integer -> Integer -> Bool
-fieq !a !b = a == b
-{-# INLINABLE fieq #-}
+fpeq :: FPrime -> FPrime -> Bool
+fpeq !a !b = a == b
+{-# INLINABLE fpeq #-}
 
 -- | (+) in the field
-fiplus :: Integer -> Integer -> Integer -> Integer
-fiplus !p !a !b = firedc p (a + b)
-{-# INLINABLE fiplus #-}
+fpplus :: FPrime -> FPrime -> FPrime -> FPrime
+fpplus !p !a !b = fpredc p (a + b)
+{-# INLINABLE fpplus #-}
 
 -- | (-) in the field
-fiminus :: Integer -> Integer -> Integer -> Integer
-fiminus p a b = firedc p (a - b)
-{-# INLINABLE fiminus #-}
+fpminus :: FPrime -> FPrime -> FPrime -> FPrime
+fpminus p a b = fpredc p (a - b)
+{-# INLINABLE fpminus #-}
 
 -- | negation in the field
-fineg :: Integer -> Integer -> Integer
-fineg !p !a = firedc p (-a)
-{-# INLINABLE fineg #-}
+fpneg :: FPrime -> FPrime -> FPrime
+fpneg !p !a = fpredc p (-a)
+{-# INLINABLE fpneg #-}
 
 -- | modular reduction, a simple wrapper around mod
-firedc :: Integer -> Integer -> Integer
-firedc !p !a = a `mod` p
-{-# INLINABLE firedc #-}
+fpredc :: FPrime -> FPrime -> FPrime
+fpredc !p !a = a `mod` p
+{-# INLINABLE fpredc #-}
 
 -- | field multiplication, a * b `mod` p
-fimul :: Integer -> Integer -> Integer -> Integer
-fimul !p !a !b = firedc p (a * b)
-{-# INLINABLE fimul #-}
+fpmul :: FPrime -> FPrime -> FPrime -> FPrime
+fpmul !p !a !b = fpredc p (a * b)
+{-# INLINABLE fpmul #-}
 
 -- | simple squaring in the field
-fisquare :: Integer -> Integer -> Integer
-fisquare p a = firedc p (a ^ (2::Int))
-{-# INLINABLE fisquare #-}
+fpsquare :: FPrime -> FPrime -> FPrime
+fpsquare p a = fpredc p (a ^ (2::Int))
+{-# INLINABLE fpsquare #-}
 
 -- | the power function in the field
-fipow :: (B.Bits a, Integral a) => Integer -> Integer -> a -> Integer
-fipow !p !a !k = let binlog = log2len k
+fppow :: (B.Bits a, Integral a) => FPrime -> FPrime -> a -> FPrime
+fppow !p !a !k = let binlog = log2len k
                      ex p1 p2 i
                        | i < 0 = p1
-                       | not (B.testBit k i) = firedc p $ ex (fisquare p p1) (fimul p p1 p2) (i - 1)
-                       | otherwise           = firedc p $ ex (fimul p p1 p2) (fisquare p p2) (i - 1)
-                 in firedc p $ ex a (fisquare p a) (binlog - 2)
+                       | not (B.testBit k i) = fpredc p $ ex (fpsquare p p1) (fpmul p p1 p2) (i - 1)
+                       | otherwise           = fpredc p $ ex (fpmul p p1 p2) (fpsquare p p2) (i - 1)
+                 in fpredc p $ ex a (fpsquare p a) (binlog - 2)
 
 -- | field inversion
-fiinv :: Integer -> Integer -> Integer
-fiinv !p !a = fipow p a ((fitoInteger p) - 2)
+fpinv :: FPrime -> FPrime -> FPrime
+fpinv !p !a = fppow p a ((fptoInteger p) - 2)
 
 -- | conversion wrapper with a limit
-fifromInteger :: Int -> Integer -> Integer
-fifromInteger l !a = fromInteger (a `mod` (2^l))
-{-# INLINABLE fifromInteger #-}
+fpfromInteger :: Int -> FPrime -> Integer
+fpfromInteger l !a = fromInteger (a `mod` (2^l))
+{-# INLINABLE fpfromInteger #-}
 
 -- | a most simple conversion wrapper
-fitoInteger :: Integer -> Integer
-fitoInteger = toInteger 
-{-# INLINABLE fitoInteger #-}
+fptoInteger :: FPrime -> Integer
+fptoInteger = toInteger 
+{-# INLINABLE fptoInteger #-}

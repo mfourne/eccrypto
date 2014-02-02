@@ -13,16 +13,14 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
-{-# LANGUAGE GADTs, PatternGuards, FlexibleInstances, DeriveDataTypeable, BangPatterns #-}
+{-# LANGUAGE PatternGuards, DeriveDataTypeable, BangPatterns #-}
 
 module Crypto.FPrime ( FPrime()
                      , fpeq
                      , fpplus
                      , fpminus
                      , fpneg
-                     , fpshift
                      , fpmul
-                     , fptestBit
                      , fpredc
                      , fpsquare
                      , fppow
@@ -98,7 +96,7 @@ fppow p a k = let binlog = log2len k
               in fpredc p $ ex a (fpsquare p a) (binlog - 2)
 
 fpinv :: FPrime -> FPrime -> FPrime
-fpinv p@(FPrime l _ _) a = fppow p a ((fptoInteger l p) - 2)
+fpinv p@(FPrime l _ _) a = fppow p a ((fptoInteger p) - 2)
 
 -- | this is a chunked converter from Integer into eccrypto native format
 -- | TODO: implement low-level Integer conversion
@@ -110,5 +108,5 @@ fpfromInteger l a = undefined
 -- | this is a chunked converter from eccrypto native format into Integer
 -- | TODO: implement low-level Integer conversion
 -- TODO: implement fptoInteger
-fptoInteger :: Int -> FPrime -> Integer
-fptoInteger l a = undefined
+fptoInteger :: FPrime -> Integer
+fptoInteger a = undefined
