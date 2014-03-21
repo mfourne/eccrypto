@@ -12,7 +12,7 @@
 -- 
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
 
 module Crypto.Common ( wordMax
                      , wordSize
@@ -47,17 +47,17 @@ sizeinWords t = let (w,r) = t `quotRem` wordSize
                                             
 -- constant vectors for comparisons etc.
 -- | a vector of zeros of requested length
-zero :: Int -> (V.Vector W.Word)
+zero :: Int -> V.Vector W.Word
 zero l = V.replicate (sizeinWords l) 0
 -- | a vector of zeros of requested length, but least significant word 1
-one :: Int -> (V.Vector W.Word)
-one l = V.singleton 1 V.++ V.replicate ((sizeinWords l) - 1)  0
+one :: Int -> V.Vector W.Word
+one l = V.singleton 1 V.++ V.replicate (sizeinWords l - 1)  0
 -- | a vector of zeros of requested length, but least significant word 2
-two :: Int -> (V.Vector W.Word)
-two l = V.singleton 2 V.++ V.replicate ((sizeinWords l) - 1)  0
+two :: Int -> V.Vector W.Word
+two l = V.singleton 2 V.++ V.replicate (sizeinWords l - 1)  0
 -- | a vector of zeros of requested length, but least significant word 3
-three :: Int -> (V.Vector W.Word)
-three l = V.singleton 3 V.++ V.replicate ((sizeinWords l) - 1) 0
+three :: Int -> V.Vector W.Word
+three l = V.singleton 3 V.++ V.replicate (sizeinWords l - 1) 0
 
 -- | returning the binary length of an Integer
 log2len :: (Integral a, B.Bits a) => a -> Int

@@ -12,8 +12,8 @@
 -- 
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
-{-# LANGUAGE PatternGuards, DeriveDataTypeable, BangPatterns #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Crypto.FPrime ( FPrime()
                      , fpeq
@@ -45,9 +45,7 @@ data FPrime = FPrime {-# UNPACK #-} !Int !Bool !(V.Vector W.Word)
 
 -- TODO: for FPrime
 fpeq :: FPrime -> FPrime -> Bool
-fpeq !(FPrime la sa va) !(FPrime lb sb vb) = if (la == lb) && (sa == sb)
-                                             then V.foldl' (==) True $ V.zipWith (==) va vb
-                                             else False
+fpeq (FPrime la sa va) (FPrime lb sb vb) = ((la == lb) && (sa == sb)) && V.foldl' (==) True (V.zipWith (==) va vb)
 
 -- TODO: implement fpplus with spare overflow bit
 fpplus :: FPrime -> FPrime -> FPrime -> FPrime
@@ -67,14 +65,11 @@ fpshift a l = undefined
 -- | testBit on Words, but highest Bit is overflow, so leave it out
 fptestBit :: FPrime -> Int -> Bool
 fptestBit (FPrime l _ v) i =
-  if i >= 0 
-  then if i < (wordSize - 1)
-       then flip B.testBit i $ V.head v
-       else if i < l
-            then let (index1,index2) = i `quotRem` (wordSize - 1)
-                 in flip B.testBit index2 $ (V.!) v index1
-            else False
-  else False
+  (i >= 0 ) && (if i < (wordSize - 1)
+                then flip B.testBit i $ V.head v
+                else (i < l) && (let (index1,index2) = i `quotRem` (wordSize - 1)
+                                 in flip B.testBit index2 $ (V.!) v index1)
+               )
 
 -- TODO: implement fpredc
 fpredc :: FPrime -> FPrime -> FPrime
@@ -96,7 +91,7 @@ fppow p a k = let binlog = log2len k
               in fpredc p $ ex a (fpsquare p a) (binlog - 2)
 
 fpinv :: FPrime -> FPrime -> FPrime
-fpinv p@(FPrime l _ _) a = fppow p a ((fptoInteger p) - 2)
+fpinv p@(FPrime l _ _) a = fppow p a (fptoInteger p - 2)
 
 -- | this is a chunked converter from Integer into eccrypto native format
 -- | TODO: implement low-level Integer conversion

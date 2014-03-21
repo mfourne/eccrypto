@@ -12,8 +12,8 @@
 -- 
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
-{-# LANGUAGE PatternGuards, BangPatterns #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Crypto.Fi ( FPrime
                  , fpeq
@@ -27,6 +27,7 @@ module Crypto.Fi ( FPrime
                  , fpinv
                  , fpfromInteger
                  , fptoInteger
+                 , fptestBit
                  )
        where
 
@@ -83,7 +84,7 @@ fppow !p !a !k = let binlog = log2len k
 
 -- | field inversion
 fpinv :: FPrime -> FPrime -> FPrime
-fpinv !p !a = fppow p a ((fptoInteger p) - 2)
+fpinv !p !a = fppow p a (fptoInteger p - 2)
 
 -- | conversion wrapper with a limit
 fpfromInteger :: Int -> FPrime -> Integer
@@ -94,3 +95,7 @@ fpfromInteger l !a = fromInteger (a `mod` (2^l))
 fptoInteger :: FPrime -> Integer
 fptoInteger = toInteger 
 {-# INLINABLE fptoInteger #-}
+
+-- | a testBit wrapper
+fptestBit :: FPrime -> Int -> Bool
+fptestBit = B.testBit

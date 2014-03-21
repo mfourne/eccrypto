@@ -33,8 +33,7 @@ Library
     Crypto.ECC.NIST.Base
     Crypto.ECC.NIST.ECDH
     Crypto.ECC.NIST.StandardCurves
-  ghc-options:
-    -Wall
+  ghc-options: -Wall
 
 source-repository head
   type:     git

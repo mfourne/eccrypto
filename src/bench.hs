@@ -11,7 +11,7 @@
 -- best performance measured with just 1 thread
 --
 -----------------------------------------------------------------------------
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
 
 import Crypto.ECC.NIST.Base
 import Crypto.ECC.NIST.StandardCurves

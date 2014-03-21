@@ -11,7 +11,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
 
 module Crypto.ECC.NIST.ECDH
     where

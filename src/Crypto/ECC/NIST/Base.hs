@@ -12,8 +12,8 @@
 -- 
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
-{-# LANGUAGE GADTs, PatternGuards, FlexibleInstances, DeriveDataTypeable, BangPatterns #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
+{-# LANGUAGE GADTs, FlexibleInstances, DeriveDataTypeable #-}
 
 module Crypto.ECC.NIST.Base ( FPrime
                             , fpfromInteger
@@ -32,7 +32,6 @@ module Crypto.ECC.NIST.Base ( FPrime
        where
 
 import Prelude (Eq,Num(..),Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),mod,fromInteger,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),toInteger,maxBound,rem,quot,quotRem,error)
-import qualified Data.Bits as B (Bits(..),testBit)
 import qualified Crypto.Types as CT (BitLength)
 import Data.Typeable(Typeable)
 import Crypto.Common
@@ -46,19 +45,19 @@ data EC a where
      ECi :: CT.BitLength -- an Int documenting the effective bitlength
          -> FPrime       -- b
          -> FPrime       -- p
-         -> Integer      -- r
+         -> FPrime       -- r
          -> EC FPrime    -- the resulting curve
      -- the Curves on F2, having the form  y^2*z+x*y*z=x^3+a*x^2*z+b*z^3 mod P (projective); relevant for "ison"
      ECb :: CT.BitLength -- an Int documenting the effective bitlength
          -> Int          -- a, may be 0 or 1
          -> F2           -- b, may be 1 or something larger
          -> F2           -- p
-         -> Integer      -- r
+         -> FPrime       -- r
          -> EC F2        -- the resulting curve
      deriving(Typeable)
 instance Eq (EC a) where
   (ECi l b p r) == (ECi l' b' p' r') = l==l' && b==b' && p==p' && r==r'
-  (ECb l a b p r) == (ECb l' a' b' p' r') = l==l' && a==a' && (f2eq b b') && (f2eq p p') && r==r'
+  (ECb l a b p r) == (ECb l' a' b' p' r') = l==l' && a==a' && f2eq b b' && f2eq p p' && r==r'
   _ == _ = False
 instance Show (EC a) where
   show (ECi l b p r) = "Curve with length" ++ show l ++", y^2=x^3-3*x+" ++ show b ++ " mod " ++ show p ++ " and group order " ++ show r ++ "."
@@ -81,18 +80,19 @@ data ECPF a where
          -> ECPF F2   -- the point
   deriving(Typeable)
 instance Eq (ECPF a) where
-  (ECPp x y z) == (ECPp x' y' z') = (fpeq x x') && (fpeq y y') && (fpeq z z')
-  (ECPpF2 x y z) == (ECPpF2 x' y' z') = (f2eq x x') && (f2eq y y') && (f2eq z z')
+  (ECPp x y z) == (ECPp x' y' z') = fpeq x x' && fpeq y y' && fpeq z z'
+  (ECPpF2 x y z) == (ECPpF2 x' y' z') = f2eq x x' && f2eq y y' && f2eq z z'
   _ == _ = False
 instance Show (ECPF a) where
-  show (ECPp x y z) = "x: " ++ (show x) ++ " y: " ++ (show y) ++ " z: " ++ (show z)
-  show (ECPpF2 x y z) = "x: " ++ (show $ f2toInteger x) ++ " y: " ++ (show $ f2toInteger y) ++ " z: " ++ (show $ f2toInteger z)
+  show (ECPp x y z) = "x: " ++ show x ++ " y: " ++ show y ++ " z: " ++ show z
+  show (ECPpF2 x y z) = "x: " ++ show (f2toInteger x) ++ " y: " ++ show (f2toInteger y) ++ " z: " ++ show (f2toInteger z)
 
 isinf :: Int -> ECPF a -> Bool
-isinf l (ECPp x y z) = x==(fpfromInteger l 0) && y==(fpfromInteger l 1) && z==(fpfromInteger l 0)
-isinf l (ECPpF2 x y z) = (f2eq x (F2 l (zero l))) && (f2eq y (F2 l (one l))) && (f2eq z (F2 l (zero l)))
+isinf l (ECPp x y z) = fpeq x (fpfromInteger l 0) && fpeq y (fpfromInteger l 1) && fpeq z (fpfromInteger l 0)
+isinf l (ECPpF2 x y z) = f2eq x (F2 l (zero l)) && f2eq y (F2 l (one l)) && f2eq z (F2 l (zero l))
 
--- | generic getter, returning the affine x and y-value
+-- | generic getter, returning the affine x and y-value as Integer
+-- | this is intended as interface to other libraries
 affine :: EC a -> ECPF a -> (Integer,Integer)
 affine (ECi l _ p _)   a@(ECPp x y z)   | isinf l a = error "converting Point at Infinity"
                                         | fpeq z $ fpfromInteger l 0 = (fpfromInteger l 0,fpfromInteger l 0)
@@ -139,7 +139,7 @@ pdouble _ _ = error "pdouble parameters of different type"
 -- | add 2 elliptic points
 padd :: EC a -> ECPF a -> ECPF a -> ECPF a
 padd curve@(ECi l _ p _) p1@(ECPp x1 y1 z1) p2@(ECPp x2 y2 z2)
-        | x1==x2 && y1==(fpneg p y2) && z1==z2 = ECPp (fpfromInteger l 0) (fpfromInteger l 1) (fpfromInteger l 0) -- Point at Infinity
+        | x1==x2 && y1==fpneg p y2 && z1==z2 = ECPp (fpfromInteger l 0) (fpfromInteger l 1) (fpfromInteger l 0) -- Point at Infinity
         | isinf l p1 = p2
         | isinf l p2 = p1
         | p1==p2 = pdouble curve p1
@@ -152,7 +152,7 @@ padd curve@(ECi l _ p _) p1@(ECPp x1 y1 z1) p2@(ECPp x2 y2 z2)
                 z3 = fpmul p (fppow p b (3::Int)) $ fpmul p z1 z2
             in ECPp x3 y3 z3
 padd curve@(ECb l alpha _ p _) p1@(ECPpF2 x1 y1 z1) p2@(ECPpF2 x2 y2 z2)
-        | (f2eq x1 x2) && (f2eq y1 (f2plus x2 y2)) && (f2eq z1 z2) = ECPpF2 (F2 l (zero l)) (F2 l (one l)) (F2 l (zero l))  -- Point at Infinity
+        | f2eq x1 x2 && f2eq y1 (f2plus x2 y2) && f2eq z1 z2 = ECPpF2 (F2 l (zero l)) (F2 l (one l)) (F2 l (zero l))  -- Point at Infinity
         | isinf l p1 = p2
         | isinf l p2 = p1
         | p1==p2 = pdouble curve p1
@@ -180,25 +180,26 @@ ison (ECb l alpha beta p _) a@(ECPpF2 x y z) | isinf l a = True
                                              | otherwise =
                                                f2eq
                                                (f2redc p (f2plus (f2mul p (f2pow p y (2::Int)) z) (f2mul p (f2mul p x y) z)))
-                                               (f2redc p (f2plus (f2plus (f2pow p x (3::Int)) (if alpha==1 then (f2mul p (f2pow p x (2::Int)) z) else F2 l (zero l))) (f2mul p beta (f2pow p z (3::Int)))))
+                                               (f2redc p (f2plus (f2plus (f2pow p x (3::Int)) (if alpha==1 then f2mul p (f2pow p x (2::Int)) z else F2 l (zero l))) (f2mul p beta (f2pow p z (3::Int)))))
 ison _ _ = error "ison parameters of different type"
 {-# INLINABLE ison #-}
 
 -- | Point Multiplication. The implementation is a montgomery ladder, which should be timing-attack-resistant (except for caches...)
-pmul :: EC a -> ECPF a -> Integer -> ECPF a
-pmul curve@(ECi _ _ p _) b@(ECPp _ _ _) k'  =
-  let k = k' `mod` ((fptoInteger p) - 1)
+pmul :: EC a -> ECPF a -> FPrime -> ECPF a
+pmul curve@(ECi l _ p _) b@ECPp{} k'  =
+  let k = fpredc (fpminus p p (fpfromInteger l 1)) k'
       ex p1 p2 i
         | i < 0 = p1
-        | not (B.testBit k i) = ex (pdouble curve p1) (padd curve p1 p2) (i - 1)
+        | not (fptestBit k i) = ex (pdouble curve p1) (padd curve p1 p2) (i - 1)
         | otherwise           = ex (padd curve p1 p2) (pdouble curve p2) (i - 1)
-  in ex b (pdouble curve b) ((log2len k) - 2)
-pmul curve@(ECb _ _ _ p _) b@(ECPpF2 _ _ _) k'  =
-  let k = k' `mod` ((f2toInteger p) - 1)
+  in ex b (pdouble curve b) (log2len k - 2)
+pmul curve@(ECb l _ _ p _) b@ECPpF2{} k'  =
+  let p' = (fpfromInteger l $ f2toInteger p)
+      k = fpredc (fpminus p' p' (fpfromInteger l 1)) k'
       ex p1 p2 i
         | i < 0 = p1
-        | not (B.testBit k i) = ex (pdouble curve p1) (padd curve p1 p2) (i - 1)
+        | not (fptestBit k i) = ex (pdouble curve p1) (padd curve p1 p2) (i - 1)
         | otherwise           = ex (padd curve p1 p2) (pdouble curve p2) (i - 1)
-  in ex b (pdouble curve b) ((log2len k) - 2)
+  in ex b (pdouble curve b) (log2len k - 2)
 pmul _ _ _ = error "pmul parameters of different type"
 {-# INLINABLE pmul #-}

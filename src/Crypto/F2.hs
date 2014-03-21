@@ -12,8 +12,8 @@
 -- 
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -fllvm -optlo-O3 -feager-blackholing #-}
-{-# LANGUAGE PatternGuards, DeriveDataTypeable, BangPatterns #-}
+{-# OPTIONS_GHC -O2 -feager-blackholing #-}
+{-# LANGUAGE DeriveDataTypeable, BangPatterns #-}
 
 module Crypto.F2 ( F2(..)
                  , f2eq
@@ -46,57 +46,50 @@ data F2 = F2 {-# UNPACK #-} !Int !(V.Vector W.Word)
 
 -- | (==) on F2
 f2eq :: F2 -> F2 -> Bool
-f2eq !(F2 la va) !(F2 lb vb) = if (la == lb)
-                               then V.foldl' (==) True $ V.zipWith (==) va vb
-                               else False
+f2eq (F2 la va) (F2 lb vb) = (la == lb) && V.all (== True) (V.zipWith (==) va vb)
 {-# INLINABLE f2eq #-}
 
 -- | (+) on F2
 f2plus :: F2 -> F2 -> F2
-f2plus !(F2 la va) !(F2 lb vb) = if (V.length va) == (V.length vb)
-                                 then F2 (if la>=lb then la else lb) $ V.zipWith (B.xor) va vb
-                                 else if la > lb -- else fill msbits of smaller F2 with zeros
-                                      then let veclendiff = (sizeinWords la) - (V.length vb)
-                                           in F2 la $ V.zipWith (B.xor) va                                 (vb V.++ V.replicate veclendiff 0)
-                                      else let veclendiff = (sizeinWords lb) - (V.length va)
-                                           in F2 lb $ V.zipWith (B.xor) (va V.++ V.replicate veclendiff 0) vb
+f2plus (F2 la va) (F2 lb vb) 
+  | V.length va == V.length vb = F2 (if la>=lb then la else lb) $ V.zipWith B.xor va vb
+  | la > lb   = let veclendiff = sizeinWords la - V.length vb -- else fill msbits of smaller F2 with zeros
+                in F2 la $ V.zipWith B.xor va                                 (vb V.++ V.replicate veclendiff 0)
+  | otherwise = let veclendiff = sizeinWords lb - V.length va
+                in F2 lb $ V.zipWith B.xor (va V.++ V.replicate veclendiff 0) vb
 {-# INLINABLE f2plus #-}
 
 -- | shift on F2
--- TODO: index oob
+-- TODO: errors?
 f2shift :: F2 -> Int -> F2
-f2shift !a@(F2 !la !va) !i = 
-    if i == 0 then a
-    else let newbits = la + i
-             newlen = sizeinWords newbits
-             realshift = i `rem` wordSize
-             leading = i `quot` wordSize
-             svec = case compare realshift 0 of
-               GT -> V.map (flip B.shift realshift) va V.++ V.singleton (0::W.Word)
-               EQ -> va
-               LT -> V.map (flip B.shift realshift) va
-             svecr = case compare realshift 0 of
-               GT -> V.singleton (0::W.Word) V.++ V.map (flip B.shift (-(wordSize - realshift))) va
-               EQ -> zero la
-               LT -> V.drop 1 $ V.map (flip B.shift (wordSize + realshift)) va V.++ V.singleton (0::W.Word)
-             vec = V.zipWith (B.xor) svec svecr
-         in if newbits >= 1
-            then F2 newbits $ V.replicate leading (0::W.Word) V.++ V.take (newlen - leading) vec
-            else F2 1 $ V.singleton 0
+f2shift (F2 !la !va) !i = 
+    let newbits = la + i
+        newlen = sizeinWords newbits
+        realshift = i `rem` wordSize
+        wordshift = i `quot` wordSize
+        svec = case compare realshift 0 of
+          GT -> V.replicate wordshift (0::W.Word) V.++ V.map (`B.shift` realshift) va V.++ zero wordSize
+          EQ -> V.replicate wordshift (0::W.Word) V.++ va
+          LT -> V.replicate wordshift (0::W.Word) V.++ V.map (`B.shift` realshift) va
+        svecr = case compare realshift 0 of
+          GT -> V.replicate wordshift (0::W.Word) V.++ zero wordSize V.++ V.map (`B.shift` (-(wordSize - realshift))) va
+          EQ -> V.replicate wordshift (0::W.Word) V.++ zero la
+          LT -> V.drop 1 $ V.replicate wordshift (0::W.Word) V.++ (V.map (`B.shift` (wordSize + realshift)) va V.++ zero wordSize)
+        vec = V.zipWith B.xor svec svecr
+    in if newbits >= 1
+       then F2 newbits $ V.take newlen vec
+       else F2 1 $ V.singleton 0
 {-# INLINABLE f2shift #-}
 
 -- | find index1 of word containing bit i at index2, return (index1,index2)
 f2findindex :: Int -> (Int,Int)
-f2findindex i = (abs i) `quotRem` wordSize
+f2findindex i = abs i `quotRem` wordSize
 {-# INLINABLE f2findindex #-}
                    
 -- | testBit on F2
 f2testBit :: F2 -> Int -> Bool
-f2testBit (F2 !la !va) !i = if i < la
-                            then let (index1,index2) = f2findindex i
-                                 in if index1 < V.length va then B.testBit ((V.!) va index1) index2
-                                    else False
-                            else False
+f2testBit (F2 !la !va) !i = (i < la) && (let (index1,index2) = f2findindex i
+                                         in (index1 < V.length va) && B.testBit ((V.!) va index1) index2)
 {-# INLINABLE f2testBit #-}
 
 -- | find degree of polynomial
@@ -104,9 +97,9 @@ deg :: Int -> V.Vector W.Word -> Int
 deg l va  = let l' = if sizeinWords l <= V.length va then l else wordSize * V.length va
                 (index1,index2) = f2findindex (l' - 1)
                 helper ix1 ix2 | ix1 == -1 = 0
-                               | otherwise = if (B.testBit ((V.!) va ix1) ix2)
+                               | otherwise = if B.testBit ((V.!) va ix1) ix2
                                              then ix2+wordSize*ix1
-                                             else helper (if ix2 <= 0 then ix1 - 1 else ix1) (if ix2 <= 0 then (wordSize - 1) else ix2 - 1)
+                                             else helper (if ix2 <= 0 then ix1 - 1 else ix1) (if ix2 <= 0 then wordSize - 1 else ix2 - 1)
             in helper index1 index2
 
 -- | polynomial reduction
@@ -116,11 +109,11 @@ f2redc (F2 !lm vm) a@(F2 !lf vf) =
   then let d = lm - 1
            bt = deg (d - 1) vm -- find second occurence
            mxminusxd = let (ix1,ix2) = f2findindex d
-                       in (V.take (ix1 - 1) vm) V.++ (V.singleton $ B.clearBit (V.last vm) ix2)
-           fun v | deg lf v >= d = let k = max d ((deg lf v) - d + bt + 1)
+                       in V.take (ix1 - 1) vm V.++ V.singleton (B.clearBit (V.last vm) ix2)
+           fun v | deg lf v >= d = let k = max d (deg lf v - d + bt + 1)
                                        (ix1,ix2) = f2findindex k
                                        (F2 lu1x u1x) = f2shift (F2 lf $ V.drop (ix1 - 1) v) (-ix2)
-                                       wx =  (V.take (ix1 - 1) v)  V.++ (V.singleton $ B.shift (B.shift ((V.!) v ix1)(wordSize-ix2)) (-(wordSize-ix2)))
+                                       wx =  V.take (ix1 - 1) v V.++ V.singleton (B.shift (B.shift ((V.!) v ix1) (wordSize-ix2)) (-(wordSize-ix2)))
                                    in let (F2 _ res) = f2plus (F2 (sizeinWords k) wx) (f2mulintern (F2 lu1x u1x) (f2shift (F2 lm mxminusxd) (k - d)))
                                       in fun res
                  | otherwise = F2 lm $ V.take (sizeinWords lm) v -- final shortening
@@ -130,14 +123,16 @@ f2redc (F2 !lm vm) a@(F2 !lf vf) =
 -- | (*) on F2
 -- peasants algorithm
 f2mulintern :: F2 -> F2 -> F2
-f2mulintern !a@(F2 !la _) !b@(F2 !lb _) = 
+f2mulintern a@(F2 !la _) b@(F2 !lb _) = 
     let nullen = F2 (2*la) (zero $ 2*la)
         pseudo = F2 lb (zero lb)
-        fun i b1 | i < la = if f2testBit a i
-                            -- real branch
-                            then fun (i + 1) (f2plus b1 (f2shift b      i))
-                            -- for timing-attack-resistance xor with 0s
-                            else fun (i + 1) (f2plus b1 (f2shift pseudo i))
+        fun i b1 | i < la = fun (i + 1) (f2plus b1 (if f2testBit a i
+                                                    -- real branch
+                                                    then f2shift b      i
+                                                    -- for timing-attack-resistance xor with 0s
+                                                    else f2shift pseudo i
+                                                   )
+                                        )
                  | otherwise = b1
     in fun 0 nullen
 
@@ -175,22 +170,22 @@ f2fromInteger l !i =
           if a <= wordMax
           then V.singleton $ fromInteger a
           else let (d,rest) = quotRem a (wordMax + 1)
-               in  (V.singleton $ fromInteger rest) V.++ (helper d)
+               in  V.singleton (fromInteger rest) V.++ helper d
         filler b = if binlog == l
                    then helper b
-                   else let lendiff = (sizeinWords l) - (sizeinWords binlog)
-                        in (helper b) V.++ (V.replicate lendiff 0)
+                   else let lendiff = sizeinWords l - sizeinWords binlog
+                        in helper b V.++ V.replicate lendiff 0
     in F2 l (filler i')
        
 -- | this is a chunked converter from eccrypto native format into Integer
 -- TODO: implement low-level Integer conversion
 f2toInteger :: F2 -> Integer
-f2toInteger !(F2 !la !va) = 
+f2toInteger (F2 !la !va) = 
   if la <= wordSize
   then toInteger $ V.head va
   else let len = V.length va
            helper r z i = 
              if i > 1
-             then helper (V.tail r) (z + (B.shift (toInteger $ V.head r) ((len - i) * wordSize))) (i - 1)
-             else z + (B.shift (toInteger $ V.head r) ((len - i) * wordSize))
+             then helper (V.tail r) (z + B.shift (toInteger $ V.head r) ((len - i) * wordSize)) (i - 1)
+             else z + B.shift (toInteger $ V.head r) ((len - i) * wordSize)
        in helper va 0 len
