@@ -96,12 +96,12 @@ isinf l (ECPpF2 x y z) = f2eq x (F2 l (zero l)) && f2eq y (F2 l (one l)) && f2eq
 affine :: EC a -> ECPF a -> (Integer,Integer)
 affine (ECi l _ p _)   a@(ECPp x y z)   | isinf l a = error "converting Point at Infinity"
                                         | fpeq z $ fpfromInteger l 0 = (fpfromInteger l 0,fpfromInteger l 0)
---                                        | fpeq z $ fpfromInteger l 1 = (fptoInteger x,fptoInteger y)
+                                        | fpeq z $ fpfromInteger l 1 = (fptoInteger x,fptoInteger y)
                                         | otherwise = let z' = fpinv p z
                                                       in (fptoInteger $ fpmul p x z',fptoInteger $ fpmul p y z')
 affine (ECb l _ _ p _) a@(ECPpF2 x y z) | isinf l a = error "converting Point at Infinity"
                                         | f2eq z $ F2 l (zero l) = (0,0)
---                                        | f2eq z $ F2 l (one l) = (f2toInteger x,f2toInteger y)
+                                        | f2eq z $ F2 l (one l) = (f2toInteger x,f2toInteger y)
                                         | otherwise = let z' = f2inv p z
                                                       in (f2toInteger $ f2mul p x z',f2toInteger $ f2mul p y z')
 affine _ _ = error "affine parameters of different type"
