@@ -3,12 +3,12 @@
 -- Module      :  Crypto.ECC.NIST.Base
 -- Copyright   :  (c) Marcel Fourné 20[09..14]
 -- License     :  BSD3
--- Maintainer  :  Marcel Fourné (mail@marcelfourne.de)
--- Stability   :  experimental
+-- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
+-- Stability   :  beta
 -- Portability :  Good
 --
 -- ECC Base algorithms & point formats for NIST Curves as specified in NISTReCur.pdf[http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf]
--- Re Timing-Attacks: We depend on (==) being resistant for Integer.
+-- Re Timing-Attacks: The field backends differ in timing-attack resistance. Due to the nature of NIST-curves, there are pitfalls in this module.
 -- 
 -----------------------------------------------------------------------------
 

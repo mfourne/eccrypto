@@ -3,12 +3,12 @@
 -- Module      :  Crypto.Fi
 -- Copyright   :  (c) Marcel Fourné 20[14..]
 -- License     :  BSD3
--- Maintainer  :  Marcel Fourné (mail@marcelfourne.de)
+-- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 -- Stability   :  experimental
 -- Portability :  Good
 --
 -- This is a thin wrapper around Integer to ease transition toward FPrime
--- Re Timing-Attacks: We depend on (==) being resistant for Integer.
+-- WARNING! Re Timing-Attacks: This backend is not fully timing attack resistant.
 -- 
 -----------------------------------------------------------------------------
 

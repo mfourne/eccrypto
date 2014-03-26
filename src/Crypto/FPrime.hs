@@ -3,7 +3,7 @@
 -- Module      :  Crypto.FPrime
 -- Copyright   :  (c) Marcel Fourné 20[14..]
 -- License     :  BSD3
--- Maintainer  :  Marcel Fourné (mail@marcelfourne.de)
+-- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 -- Stability   :  experimental
 -- Portability :  Good
 --
@@ -45,20 +45,21 @@ data FPrime = FPrime {-# UNPACK #-} !Int !Bool !(V.Vector W.Word)
 
 -- TODO: for FPrime
 fpeq :: FPrime -> FPrime -> Bool
-fpeq (FPrime la sa va) (FPrime lb sb vb) = ((la == lb) && (sa == sb)) && V.foldl' (==) True (V.zipWith (==) va vb)
+fpeq (FPrime la sa va) (FPrime lb sb vb) = ((la == lb) && (sa == sb)) && V.all (== True) (V.zipWith (==) va vb)
 
 -- TODO: implement fpplus with spare overflow bit
 fpplus :: FPrime -> FPrime -> FPrime -> FPrime
-fpplus p a b = undefined
+fpplus p a b = fpredc p $ undefined
 
 -- | a - b mod p, different cost than fpplus but other operation, so no key bit leakage
 fpminus :: FPrime -> FPrime -> FPrime -> FPrime
 fpminus p a b = fpplus p a $ fpneg p b
 
 fpneg :: FPrime -> FPrime -> FPrime
-fpneg p (FPrime l s v) = fpredc p (FPrime l (not s) v)
+fpneg p a = fpplus p p a
 
 -- TODO: implement fpshift
+-- | internal function
 fpshift :: FPrime -> Int -> FPrime
 fpshift a l = undefined
 
@@ -77,7 +78,7 @@ fpredc p a = undefined
 
 -- TODO: implement fpmul
 fpmul :: FPrime -> FPrime -> FPrime -> FPrime
-fpmul p a b = undefined
+fpmul p a b = fpredc p $ undefined
 
 fpsquare :: FPrime -> FPrime -> FPrime
 fpsquare p a = fpmul p a a

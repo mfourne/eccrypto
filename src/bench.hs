@@ -3,7 +3,7 @@
 -- Module      :  
 -- Copyright   :  (c) Marcel Fourné 20[09..14]
 -- License     :  BSD3
--- Maintainer  :  Marcel Fourné (mail@marcelfourne.de)
+-- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 --
 -- benchmarks
 -- recommended:

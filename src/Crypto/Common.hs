@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Crypto.Common
--- Copyright   :  (c) Marcel Fourné 20[09..14]
+-- Copyright   :  (c) Marcel Fourné 20[09..]
 -- License     :  BSD3
--- Maintainer  :  Marcel Fourné (mail@marcelfourne.de)
+-- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 -- Stability   :  experimental
 -- Portability :  Good
 --

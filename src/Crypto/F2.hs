@@ -3,7 +3,7 @@
 -- Module      :  Crypto.F2
 -- Copyright   :  (c) Marcel Fourné 20[09..]
 -- License     :  BSD3
--- Maintainer  :  Marcel Fourné (mail@marcelfourne.de)
+-- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 -- Stability   :  experimental
 -- Portability :  Good
 --
@@ -31,7 +31,7 @@ module Crypto.F2 ( F2(..)
        where
 
 import Prelude (Eq,Num(..),Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),mod,fromInteger,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),toInteger,maxBound,rem,quot,quotRem,error,(.),max,map,foldl,compare,Ordering(..))
-import qualified Data.Bits as B (Bits(..),testBit,clearBit)
+import qualified Data.Bits as B (Bits(..),testBit)
 import Data.Typeable(Typeable)
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Word as W (Word)
@@ -60,7 +60,6 @@ f2plus (F2 la va) (F2 lb vb)
 {-# INLINABLE f2plus #-}
 
 -- | shift on F2
--- TODO: errors?
 f2shift :: F2 -> Int -> F2
 f2shift (F2 !la !va) !i = 
     let newbits = la + i
@@ -92,6 +91,35 @@ f2testBit (F2 !la !va) !i = (i < la) && (let (index1,index2) = f2findindex i
                                          in (index1 < V.length va) && B.testBit ((V.!) va index1) index2)
 {-# INLINABLE f2testBit #-}
 
+-- | polynomial reduction, simple scan
+f2redc :: F2 -> F2 -> F2
+f2redc m@(F2 !lm _) f@(F2 !lf vf) =
+  if lf >= lm
+  then let null = F2 lm $ zero lm
+           fun v@(F2 _ vv) i
+             | i < (lm - 1) = F2 lm $ V.take (sizeinWords lm) vv -- final shortening
+             | f2testBit v i = fun (f2plus (f2shift m    (i - (lm - 1))) v) (i - 1)
+             | otherwise     = fun (f2plus (f2shift null (i - (lm - 1))) v) (i - 1)
+       in fun f (lf - 1)
+  else F2 lm $ V.take (sizeinWords lm) vf -- final shortening
+       
+{-
+f2redc (F2 !lm vm) a@(F2 !lf vf) =
+  if deg lf vf >= deg lm vm
+  then let d = lm - 1
+           bt = deg (d - 1) vm -- find second occurence
+           mxminusxd = let (ix1,ix2) = f2findindex d
+                       in V.take (ix1 - 1) vm V.++ V.singleton (B.clearBit (V.last vm) ix2)
+           fun v | deg lf v >= d = let k = max d (deg lf v - d + bt + 1)
+                                       (ix1,ix2) = f2findindex k
+                                       (F2 lu1x u1x) = f2shift (F2 lf $ V.drop (ix1 - 1) v) (-ix2) -- HERE BE ERRORS in v(x)=u1(x)X^k+w(x)
+                                       wx =  V.take (ix1 - 1) v V.++ V.singleton (B.shift (B.shift ((V.!) v ix1) (wordSize-ix2)) (-(wordSize-ix2))) -- here also
+                                   in let (F2 _ res) = f2plus (F2 (sizeinWords k) wx) (f2shift (f2mulintern (F2 lu1x u1x) (F2 lm mxminusxd)) (k - d))
+                                      in fun res
+                 | otherwise = F2 lm $ V.take (sizeinWords lm) v -- final shortening
+       in fun vf
+  else a
+
 -- | find degree of polynomial
 deg :: Int -> V.Vector W.Word -> Int
 deg l va  = let l' = if sizeinWords l <= V.length va then l else wordSize * V.length va
@@ -102,23 +130,7 @@ deg l va  = let l' = if sizeinWords l <= V.length va then l else wordSize * V.le
                                              else helper (if ix2 <= 0 then ix1 - 1 else ix1) (if ix2 <= 0 then wordSize - 1 else ix2 - 1)
             in helper index1 index2
 
--- | polynomial reduction
-f2redc :: F2 -> F2 -> F2
-f2redc (F2 !lm vm) a@(F2 !lf vf) =
-  if deg lf vf >= deg lm vm
-  then let d = lm - 1
-           bt = deg (d - 1) vm -- find second occurence
-           mxminusxd = let (ix1,ix2) = f2findindex d
-                       in V.take (ix1 - 1) vm V.++ V.singleton (B.clearBit (V.last vm) ix2)
-           fun v | deg lf v >= d = let k = max d (deg lf v - d + bt + 1)
-                                       (ix1,ix2) = f2findindex k
-                                       (F2 lu1x u1x) = f2shift (F2 lf $ V.drop (ix1 - 1) v) (-ix2)
-                                       wx =  V.take (ix1 - 1) v V.++ V.singleton (B.shift (B.shift ((V.!) v ix1) (wordSize-ix2)) (-(wordSize-ix2)))
-                                   in let (F2 _ res) = f2plus (F2 (sizeinWords k) wx) (f2mulintern (F2 lu1x u1x) (f2shift (F2 lm mxminusxd) (k - d)))
-                                      in fun res
-                 | otherwise = F2 lm $ V.take (sizeinWords lm) v -- final shortening
-       in fun vf
-  else a
+-}
 
 -- | (*) on F2
 -- peasants algorithm
@@ -158,10 +170,10 @@ f2pow !p !a !k | k <= 0 = error "non-positive exponent for the power function on
 
 -- | inversion of F2 in the field
 f2inv :: F2 -> F2 -> F2
-f2inv p@(F2 l _) a = f2pow p a ((2^l) - (2::Integer))
+f2inv p a = f2pow p a (f2toInteger p - 2)
 
 -- | this is a chunked converter from Integer into eccrypto native format
--- TODO: implement low-level Integer conversion
+-- TODO: implement low-level Integer conversion?
 f2fromInteger :: Int -> Integer -> F2
 f2fromInteger l !i = 
     let i' = i `mod` (2^l) -- we take only non-negative Integers that fit into l bits
@@ -178,7 +190,7 @@ f2fromInteger l !i =
     in F2 l (filler i')
        
 -- | this is a chunked converter from eccrypto native format into Integer
--- TODO: implement low-level Integer conversion
+-- TODO: implement low-level Integer conversion?
 f2toInteger :: F2 -> Integer
 f2toInteger (F2 !la !va) = 
   if la <= wordSize
