@@ -16,21 +16,28 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Crypto.FPrime ( FPrime()
-                     , fpeq
-                     , fpplus
-                     , fpminus
-                     , fpneg
-                     , fpmul
-                     , fpredc
-                     , fpsquare
-                     , fppow
-                     , fpinv
-                     , fpfromInteger
-                     , fptoInteger
+                     , eq
+                     , add
+                     , addr
+                     , sub
+                     , subr
+                     , neg
+                     , negr
+                     , shift
+                     , mul
+                     , mulr
+                     , redc
+                     , square
+                     , pow
+                     , inv
+                     , testBit
+                     , fromInteger
+                     , toInteger
                      )
        where
 
-import Prelude (Eq,Num(..),Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),mod,fromInteger,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),toInteger,maxBound,rem,quot,quotRem,error)
+import Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),abs,mod,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),maxBound,rem,quot,quotRem,error,even)
+import qualified Prelude as P (fromInteger,toInteger)
 import qualified Data.Bits as B (Bits(..),testBit)
 import Data.Typeable(Typeable)
 import qualified Data.Vector.Unboxed as V
@@ -43,66 +50,131 @@ import Crypto.Common
 data FPrime = FPrime {-# UNPACK #-} !Int !Bool !(V.Vector W.Word)
             deriving (Show,Typeable)
 
--- TODO: for FPrime
-fpeq :: FPrime -> FPrime -> Bool
-fpeq (FPrime la sa va) (FPrime lb sb vb) = ((la == lb) && (sa == sb)) && V.all (== True) (V.zipWith (==) va vb)
+-- TODO: think of efficient radix-choices, f.e. 25519:-> 51*5
+radix :: Int
+radix = wordSize - 2
 
--- TODO: implement fpplus with spare overflow bit
-fpplus :: FPrime -> FPrime -> FPrime -> FPrime
-fpplus p a b = fpredc p $ undefined
+halfradix :: Int
+halfradix = radix `div` 2
+
+radmax :: Int
+radmax = 2^radix-1
+
+sizeinradwords :: Int -> Int
+sizeinradwords 0 = 1
+sizeinradwords l = let (w,r) = (abs l) `quotRem` radix
+                   in if r > 0 then w + 1 else w
+
+-- | a == b
+eq :: FPrime -> FPrime -> Bool
+eq (FPrime la sa va) (FPrime lb sb vb) = ((la == lb) && (sa == sb)) && V.all (== True) (V.zipWith (==) va vb)
+
+-- | a + b
+-- TODO: implement add with spare overflow bit, carry-loop
+add :: FPrime -> FPrime -> FPrime
+add a@(FPrime la sa va) b@(FPrime lb sb vb) =
+  let fun res = undefined
+  in fun (FPrime ((if la >= lb then la else lb) + 1) sa $ V.singleton (0::W.Word))
+
+-- | a + b `mod` p
+-- TODO: implement addr with spare overflow bit, 
+addr :: FPrime -> FPrime -> FPrime -> FPrime
+addr p@(FPrime lp sp vp) a b =
+  let summe = add a b
+  in undefined
+
+-- | a - b, different cost than fpplus but other operation, so no key bit leakage
+-- TODO: implement
+sub :: FPrime -> FPrime -> FPrime
+sub a b = undefined
 
 -- | a - b mod p, different cost than fpplus but other operation, so no key bit leakage
-fpminus :: FPrime -> FPrime -> FPrime -> FPrime
-fpminus p a b = fpplus p a $ fpneg p b
+subr :: FPrime -> FPrime -> FPrime -> FPrime
+subr p a b = addr p a $ sub p b
 
-fpneg :: FPrime -> FPrime -> FPrime
-fpneg p a = fpplus p p a
+-- | (-a)
+neg :: FPrime -> FPrime
+neg (FPrime la sa va) = FPrime la (not sa) va
 
--- TODO: implement fpshift
+-- | (-a) `mod` p
+negr :: FPrime -> FPrime -> FPrime
+negr p a = redc p $ add p a
+
 -- | internal function
-fpshift :: FPrime -> Int -> FPrime
-fpshift a l = undefined
+-- TODO: implement shift
+shift :: FPrime -> Int -> FPrime
+shift a l = undefined
 
 -- | testBit on Words, but highest Bit is overflow, so leave it out
-fptestBit :: FPrime -> Int -> Bool
-fptestBit (FPrime l _ v) i =
-  (i >= 0 ) && (if i < (wordSize - 1)
+testBit :: FPrime -> Int -> Bool
+testBit (FPrime l _ v) i =
+  (i >= 0 ) && (if i < (radix)
                 then flip B.testBit i $ V.head v
-                else (i < l) && (let (index1,index2) = i `quotRem` (wordSize - 1)
+                else (i < l) && (let (index1,index2) = i `quotRem` (radix)
                                  in flip B.testBit index2 $ (V.!) v index1)
                )
 
--- TODO: implement fpredc
-fpredc :: FPrime -> FPrime -> FPrime
-fpredc p a = undefined
+-- | modular reduction, a `mod` p
+-- TODO: implement redc
+redc :: FPrime -> FPrime -> FPrime
+redc p a = undefined
 
--- TODO: implement fpmul
-fpmul :: FPrime -> FPrime -> FPrime -> FPrime
-fpmul p a b = fpredc p $ undefined
+-- | internal multiply, x * y
+-- TODO: implement mul
+mul :: FPrime -> FPrime -> FPrime
+mul x@(FPrime l1 s1 _) y@(FPrime l2 s2 _) =
+  -- computations on half-size words, results word-size
+  let xh = shift x (-halfradix)
+      xl = shift (shift x (halfradix)) (-halfradix)
+      yh = shift y (-halfradix)
+      yl = shift (shift y (halfradix)) (-halfradix)
+  in undefined
 
-fpsquare :: FPrime -> FPrime -> FPrime
-fpsquare p a = fpmul p a a
+-- | multiply followed by reduction, a * b `mod` p
+mulr :: FPrime -> FPrime -> FPrime -> FPrime
+mulr p a b = redc p $ mul a b
 
-fppow :: (B.Bits a, Integral a) => FPrime -> FPrime -> a -> FPrime
-fppow p a k = let binlog = log2len k
-                  ex p1 p2 i
-                    | i < 0 = p1
-                    | not (B.testBit k i) = fpredc p $ ex (fpsquare p p1) (fpmul p p1 p2) (i - 1)
-                    | otherwise           = fpredc p $ ex (fpmul p p1 p2) (fpsquare p p2) (i - 1)
-              in fpredc p $ ex a (fpsquare p a) (binlog - 2)
+square :: FPrime -> FPrime -> FPrime
+square p a = redc p $ mul a a
 
-fpinv :: FPrime -> FPrime -> FPrime
-fpinv p@(FPrime l _ _) a = fppow p a (fptoInteger p - 2)
+pow :: (B.Bits a, Integral a) => FPrime -> FPrime -> a -> FPrime
+pow p a k = let binlog = log2len k
+                ex p1 p2 i
+                  | i < 0 = p1
+                  | not (B.testBit k i) = redc p $ ex (square p p1)        (redc p $ mul p1 p2) (i - 1)
+                  | otherwise           = redc p $ ex (redc p $ mul p1 p2) (square p p2)        (i - 1)
+            in redc p $ ex a (square p a) (binlog - 2)
+
+inv :: FPrime -> FPrime -> FPrime
+inv p a = pow p a (toInteger p - 2)
 
 -- | this is a chunked converter from Integer into eccrypto native format
 -- | TODO: implement low-level Integer conversion
--- | TODO: length max l with cutoff, min l but with zero-padding in front
--- TODO: implement fpfromInteger
-fpfromInteger :: Int -> Integer -> FPrime
-fpfromInteger l a = undefined
+fromInteger :: Int -> Integer -> FPrime
+fromInteger l i =
+  let i' = i `rem` (2^l) -- we take only non-negative Integers that fit into l bits
+      s = if i < 0 then True else False
+      binlog = log2len i'
+      helper a = 
+        if a <= P.toInteger radmax
+        then V.singleton $ P.fromInteger a
+        else let (d,rest) = quotRem a (P.toInteger radmax + 1)
+             in  V.singleton (P.fromInteger rest) V.++ helper d
+      filler b = if binlog == l
+                 then helper b
+                 else let lendiff = sizeinradwords l - sizeinradwords binlog
+                      in helper b V.++ V.replicate lendiff 0
+  in FPrime l s (filler i')
 
 -- | this is a chunked converter from eccrypto native format into Integer
 -- | TODO: implement low-level Integer conversion
--- TODO: implement fptoInteger
-fptoInteger :: FPrime -> Integer
-fptoInteger a = undefined
+toInteger :: FPrime -> Integer
+toInteger (FPrime la s va) =
+  if la <= radix
+  then (P.toInteger $ V.head va) * if s then (-1) else 1
+  else let len = V.length va
+           helper r z i = 
+             if i > 1
+             then helper (V.tail r) (z + B.shift (P.toInteger $ V.head r) ((len - i) * radix)) (i - 1)
+             else z + B.shift (P.toInteger $ V.head r) ((len - i) * radix)
+       in helper va 0 len * if s then (-1) else 1

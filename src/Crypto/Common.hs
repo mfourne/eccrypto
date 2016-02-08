@@ -22,10 +22,11 @@ module Crypto.Common ( wordMax
                      , two
                      , three
                      , log2len
+                     , testcond
                      )
        where
 
-import Prelude (Eq,Num(..),Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),mod,fromInteger,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),toInteger,maxBound,rem,quot,quotRem,error)
+import Prelude (Num(..),Int,($),(+),(-),(*),fromInteger,Integral,takeWhile,length,iterate,(>),(<=),toInteger,maxBound,rem,quot,quotRem,div)
 import qualified Data.Bits as B (Bits(..))
 import qualified Data.Word as W (Word)
 import qualified Data.Vector.Unboxed as V
@@ -42,7 +43,7 @@ wordSize = B.bitSize (0::W.Word)
 -- | determine the needed storage for a bitlength in Words
 sizeinWords :: Int -> Int
 sizeinWords 0 = 1 -- or error? 0 bit len?!
-sizeinWords t = let (w,r) = t `quotRem` wordSize
+sizeinWords t = let (w,r) = (abs t) `quotRem` wordSize
                 in if r > 0 then w + 1 else w
                                             
 -- constant vectors for comparisons etc.
@@ -64,3 +65,7 @@ log2len :: (Integral a, B.Bits a) => a -> Int
 log2len 0 = 1
 log2len n = length (takeWhile (<=n) (iterate (*2) 1))
 {-# INLINABLE log2len #-}
+
+-- | we want word w at position i to result in a word to multiply by, eliminating branching
+testcond :: W.Word -> Int -> W.Word
+testcond w i = B.shift (B.shift w (wordSize - i - 1)) (-(wordSize - 1))

@@ -1,13 +1,15 @@
 Name:                eccrypto
 Version:             0.1.0
 Synopsis:	     Elliptic Curve Cryptography for Haskell
-Description:         Elliptic Curve Cryptography in Haskell, evolved for practical usability from higher-level libraries.
+Description:         Elliptic Curve Cryptography in Haskell, evolved for correctness and practical usability from higher-level libraries.
 		     .
-		     The implementation is pure Haskell and as fast as reasonably possible. Timing-attack resistance is important, failure is documented.
+		     The implementation is pure Haskell and as generic and fast as reasonably possible. Timing-attack resistance is important, failure must be documented.
 		     .
 		     This library was formerly known and its code originated as hecc, but since this would imply Hyperelliptic ECC, the name was changed. 
 		     .
 		     Also the scope was changed by selecting best internal formats and no longer trying to be overly general, allowing more optimizations.
+		     .
+		     N.B.: F2 is faulty and slow.
 		     .
 		     More secure curves will be added.
 License:             BSD3
@@ -24,10 +26,13 @@ Extra-Source-Files:  src/bench.hs
 
 Library
   hs-source-dirs: src
-  Build-Depends: base >= 4 && < 5
-               , cereal
-               , crypto-api
-               , vector
+  Build-Depends:
+      base >= 4 && < 5
+    , bytestring >= 0.10 && < 0.11
+    , cereal >=0.4 && < 0.5
+    , SHA >= 1.6.4 && < 1.7
+    , crypto-api >= 0.13 && < 0.14
+    , vector >= 0.10 && < 0.12
   Exposed-modules:
     Crypto.Common
     Crypto.F2
@@ -35,6 +40,7 @@ Library
     Crypto.ECC.NIST.Base
     Crypto.ECC.NIST.ECDH
     Crypto.ECC.NIST.StandardCurves
+    Crypto.ECC.Ed25519.EdDSA
   ghc-options: -Wall
 
 source-repository head

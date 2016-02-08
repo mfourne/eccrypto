@@ -15,6 +15,7 @@
 
 import Crypto.ECC.NIST.Base
 import Crypto.ECC.NIST.StandardCurves
+import qualified Crypto.F2 as F2 (fromInteger,toInteger)
 import Control.Monad.Random
 import Criterion
 import Criterion.Main
@@ -30,14 +31,14 @@ main = do
       p2 = ECPp (stdc_xp p521) (stdc_yp p521) 1
       k20' = 1093849038073734274511112390766805569936207598951683748994586394495953116150735016013708737573759623248592132296706313309438452531591012912142327488478985984
       c3 = ECb (stdcF_l b283) (stdcF_a b283) (stdcF_b b283) (stdcF_p b283) (stdcF_r b283)
-      p3 = ECPpF2 (stdcF_xp b283) (stdcF_yp b283) (f2fromInteger 283 1)
+      p3 = ECPpF2 (stdcF_xp b283) (stdcF_yp b283) (F2.fromInteger 283 1)
       k30' = 115792089210356248762697446949407573529996955224135760342422259061068512044368
       k31' = 2
       k32' = 3
       k33' = 2^282
   k13' <- evalRandIO $ getRandomR (1,stdc_p p256)
   k21' <- evalRandIO $ getRandomR (1,stdc_p p521)
-  k34' <- evalRandIO $ getRandomR (1, f2toInteger $ stdcF_p b283)
+  k34' <- evalRandIO $ getRandomR (1, F2.toInteger $ stdcF_p b283)
   defaultMain [bgroup "NIST P-256" [ bench "pmul by random value" $ whnf (pmul c1 p1) k13'
                                    , bench "pmul by 2^254" $ whnf (pmul c1 p1 ) (2^254)
                                    , bench "pmul by top 5 bits" $ whnf (pmul c1 p1) k11'
