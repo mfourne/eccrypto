@@ -1,5 +1,5 @@
 Name:                eccrypto
-Version:             0.1.0
+Version:             0.0
 Synopsis:	     Elliptic Curve Cryptography for Haskell
 Description:         Elliptic Curve Cryptography in Haskell, evolved for correctness and practical usability from higher-level libraries.
 		     .
@@ -29,7 +29,7 @@ Library
   Build-Depends:
       base >= 4 && < 5
     , bytestring >= 0.10 && < 0.11
-    , cereal >=0.4 && < 0.5
+    , cereal >=0.4 && < 0.6
     , SHA >= 1.6.4 && < 1.7
     , crypto-api >= 0.13 && < 0.14
     , vector >= 0.10 && < 0.12
