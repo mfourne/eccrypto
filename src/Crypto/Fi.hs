@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE Safe, BangPatterns, NoImplicitPrelude #-}
 
 module Crypto.Fi ( FPrime
                  , eq
@@ -31,15 +31,14 @@ module Crypto.Fi ( FPrime
                  , inv
                  , fromInteger
                  , toInteger
-                 , testBit
                  , condBit
                  )
        where
 
-import Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),mod,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),maxBound,rem,quot,quotRem,error)
-import qualified Prelude as P (fromInteger,toInteger)
-import qualified Data.Bits as B (Bits(..),testBit,shift,(.&.),(.|.))
-import Crypto.Common (log2len)
+import safe Prelude ((==),Integer,Int,Bool(),($),(+),(-),(*),(^),mod,otherwise,(<))
+import safe qualified Prelude as P (fromInteger,toInteger)
+import safe qualified Data.Bits as B (Bits(..),shift,(.&.))
+import safe Crypto.Common (log2len)
 
 -- | a simple wrapper to ease transition
 type FPrime = Integer
@@ -61,12 +60,12 @@ addr !p !a !b = redc p $ a + b
 
 -- | (-) in the field
 sub :: FPrime -> FPrime -> FPrime
-sub a b = a - b
+sub !a !b = a - b
 {-# INLINABLE sub #-}
 
 -- | (-) in the field
 subr :: FPrime -> FPrime -> FPrime -> FPrime
-subr p a b = redc p (a - b)
+subr !p !a !b = redc p (a - b)
 {-# INLINABLE subr #-}
 
 -- | negation in the field
@@ -76,7 +75,7 @@ neg !p !a = redc p (-a)
 
 -- | bitshift wrapper
 shift :: FPrime -> Int -> FPrime
-shift = B.shift
+shift !a !b = B.shift a b
 
 -- | modular reduction, a simple wrapper around mod
 redc :: FPrime -> FPrime -> FPrime
@@ -95,17 +94,33 @@ mulr !p !a !b = redc p $ a * b
 
 -- | simple squaring in the field
 square :: FPrime -> FPrime -> FPrime
-square p a = redc p (a ^ (2::Int))
+square !p !a = redc p (a ^ (2::Int))
 {-# INLINABLE square #-}
 
--- | the power function in the field
-pow :: (B.Bits a, Integral a) => FPrime -> FPrime -> a -> FPrime
+-- | the power function in the field, for 1>= k < p
+pow :: FPrime -> FPrime -> Integer -> FPrime
+{-
 pow !p !a !k = let binlog = log2len k
                    ex p1 p2 i
                      | i < 0 = p1
                      | not (B.testBit k i) = redc p $ ex (square p p1)  (mulr p p1 p2) (i - 1)
                      | otherwise           = redc p $ ex (mulr p p1 p2) (square p p2)  (i - 1)
                in redc p $ ex a (square p a) (binlog - 2)
+-- -}
+-- {-
+pow !p !a' !k = let a = redc p a'
+                    binlog = log2len a
+                    alleeins = fromInteger binlog (2^binlog - 1)
+                    eins = fromInteger binlog 1
+                    ex erg i
+                      | i < 0 = erg
+                      | otherwise =
+                          let s = condBit k i
+                              pat = mul alleeins s
+                              invpat = mul alleeins (sub eins s)
+                          in redc p $ ex (mulr p (square p erg) (addr p (a B..&. pat) (eins B..&. invpat))) (i - 1)
+                in redc p $ ex 1 (log2len k - 1)
+-- -}
 
 -- | field inversion
 inv :: FPrime -> FPrime -> FPrime
@@ -113,20 +128,15 @@ inv !p !a = pow p a (toInteger p - 2)
 
 -- | conversion wrapper with a limit
 fromInteger :: Int -> FPrime -> Integer
-fromInteger l !a = P.fromInteger (a `mod` (2^l))
+fromInteger !l !a = P.fromInteger (a `mod` (2^l))
 {-# INLINABLE fromInteger #-}
 
 -- | a most simple conversion wrapper
 toInteger :: FPrime -> Integer
-toInteger = P.toInteger 
+toInteger !a = P.toInteger a
 {-# INLINABLE toInteger #-}
-
--- | a testBit wrapper
-testBit :: FPrime -> Int -> Bool
-testBit = B.testBit
-{-# INLINABLE testBit #-}
 
 -- | like testBit, but give either 0 or 1
 condBit :: FPrime -> Int -> FPrime
-condBit a i = shift (a B..&. (fromInteger (i+1) ((2^(i+1)-1)::Integer))) (-i)
+condBit !a !i = shift (a B..&. fromInteger (i+1) ((2^(i+1)-1)::Integer)) (-i)
 {-# INLINABLE condBit #-}

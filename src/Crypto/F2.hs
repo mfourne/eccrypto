@@ -14,7 +14,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE DeriveDataTypeable, BangPatterns #-}
+{-# LANGUAGE Safe, DeriveDataTypeable, BangPatterns, NoImplicitPrelude #-}
 
 module Crypto.F2 ( F2(..)
                  , eq
@@ -33,13 +33,13 @@ module Crypto.F2 ( F2(..)
                  )
        where
 
-import Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool(False,True),(++),($),fail,undefined,(+),(-),(*),(^),mod,Integral,otherwise,(<),div,not,String,flip,takeWhile,length,iterate,(>),(<=),(>=),maxBound,rem,quot,quotRem,error,(.),max,map,foldl,compare,Ordering(..))
-import qualified Prelude as P (toInteger,fromInteger)
-import qualified Data.Bits as B (Bits(..),testBit)
-import Data.Typeable(Typeable)
-import qualified Data.Vector.Unboxed as V
-import qualified Data.Word as W (Word)
-import Crypto.Common
+import safe Prelude (Show,(==),(&&),Integer,Int,Bool(True),($),(+),(-),(*),(^),otherwise,(<),not,(>),(<=),(>=),rem,quot,quotRem,error,compare,Ordering(..))
+import safe qualified Prelude as P (toInteger,fromInteger)
+import safe qualified Data.Bits as B (Bits(..),testBit)
+import safe Data.Typeable(Typeable)
+-- import safe qualified Data.Vector.Unboxed as V
+import safe qualified Data.Word as W (Word)
+import safe Crypto.Common
 
 -- | F2 consist of an exact length of meaningful bits and a representation of those bits in a possibly larger Vector of Words
 -- | Note: The vectors use small to large indices, but the Data.Word endianness is of no concern as it is hidden by Data.Bits
@@ -104,7 +104,7 @@ testBit (F2 !la !va) !i = (i < la) && (let (index1,index2) = findindex i
 -- | fill highest bits over official length with 0s
 bleachupper :: Int -> F2 -> F2
 bleachupper l (F2 _ v) = let (_,ix2) = findindex (l - 1)
-                         in F2 l $ V.take (sizeinWords l - 1) v V.++ (V.singleton $ B.shift (B.shift (V.last v) (wordSize - (ix2 + 1))) (-(wordSize - (ix2 + 1))))
+                         in F2 l $ V.take (sizeinWords l - 1) v V.++ V.singleton (B.shift (B.shift (V.last v) (wordSize - (ix2 + 1))) (-(wordSize - (ix2 + 1))))
 
 -- | polynomial reduction, simple scan
 -- TODO: idempotent? not right now -> ERROR!
@@ -144,7 +144,7 @@ square :: F2 -> F2
 square a = mul a a
 
 -- | the power function on F2 for positive exponents, reducing early
-pow :: (B.Bits a, Integral a) => F2 -> F2 -> a -> F2
+pow :: F2 -> F2 -> Integer -> F2
 pow !p !a !k | k <= 0 = error "non-positive exponent for the power function on F2"
              | otherwise =
                let binlog = log2len k

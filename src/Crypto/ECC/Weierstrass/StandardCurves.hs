@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Crypto.ECC.NIST.StandardCurves
--- Copyright   :  (c) Marcel Fourné 20[09..14]
+-- Module      :  Crypto.ECC.Weierstrass.StandardCurves
+-- Copyright   :  (c) Marcel Fourné 20[09..]
 -- License     :  BSD3
 -- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 -- Stability   :  experimental
@@ -13,28 +13,29 @@
 --     Therein mentioned are only the NIST Prime Curves, because...
 -- NB F2: Read up on solving the Discrete Logarithm Problem in fields of small characteristic (i.e. here: Binary Curves)
 --        and then decide if the results are relevant to you.
--- Recommendation: If your need NIST Curves and you do not know which one, use the Prime Curves.
+-- Recommendation: If you need NIST Curves and you do not know which one, use the Prime Curves.
 --
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE Safe, DeriveDataTypeable, NoImplicitPrelude #-}
 
-module Crypto.ECC.NIST.StandardCurves
+module Crypto.ECC.Weierstrass.StandardCurves
     where
 
-import Prelude(Int,Integer,fromInteger)
-import Crypto.ECC.NIST.Base (FPrime,F2)
-import qualified Crypto.Fi as FP (fromInteger)
-import qualified Crypto.F2 as F2 (fromInteger)
-import Data.Typeable(Typeable)
+import safe Prelude(Int)
+import safe Crypto.ECC.Weierstrass.Internal (FPrime)
+-- import safe Crypto.ECC.Weierstrass.Internal (FPrime,F2)
+import safe qualified Crypto.Fi as FP (fromInteger)
+-- import safe qualified Crypto.F2 as F2 (fromInteger)
+import safe Data.Typeable(Typeable)
 
 -- | Datatype for defined Standard Curves
 data StandardCurve = 
   -- Curves on Prime Fields
     StandardCurve {stdc_l::Int,stdc_p::FPrime,stdc_r::FPrime,stdc_b::FPrime,stdc_xp::FPrime,stdc_yp::FPrime}
   -- Curves on Binary Fields (F2)
-  | StandardCurveF2 {stdcF_l::Int,stdcF_p::F2,stdcF_r::FPrime,stdcF_a::Int,stdcF_b::F2,stdcF_xp::F2,stdcF_yp::F2}
+--  | StandardCurveF2 {stdcF_l::Int,stdcF_p::F2,stdcF_r::FPrime,stdcF_a::Int,stdcF_b::F2,stdcF_xp::F2,stdcF_yp::F2}
     deriving (Typeable)
 
 -- Nist variety Curves over Prime Fields (large characteristic: p)
@@ -95,7 +96,7 @@ p521 = StandardCurve {
        }
 
 -- Nist variety Curves over Binary Fields (small characteristic: 2; please refer to the new results of solving the Discrete Logarithm Problem in fields of small characterstic, "Cryptopocalypse", Joux et al.)
-
+{-
 -- | NIST Binary Field Curve K-283
 k283:: StandardCurve
 k283 = StandardCurveF2 {
@@ -119,3 +120,4 @@ b283 = StandardCurveF2 {
   stdcF_xp = F2.fromInteger 283 11604587487407003699882500449177537465719784002620028212980871291231978603047872962643,
   stdcF_yp = F2.fromInteger 283 6612720053854191978412609357563545875491153188501906352980899759345275170452624446196
   }
+-}

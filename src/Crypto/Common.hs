@@ -13,23 +13,26 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
+{-# LANGUAGE Trustworthy, NoImplicitPrelude, MagicHash #-}
 
 module Crypto.Common ( wordMax
                      , wordSize
                      , sizeinWords
-                     , zero
+{-                     , zero
                      , one
                      , two
-                     , three
+                     , three -}
                      , log2len
                      , testcond
                      )
        where
 
-import Prelude (Num(..),Int,($),(+),(-),(*),fromInteger,Integral,takeWhile,length,iterate,(>),(<=),toInteger,maxBound,rem,quot,quotRem,div)
-import qualified Data.Bits as B (Bits(..))
-import qualified Data.Word as W (Word)
-import qualified Data.Vector.Unboxed as V
+import safe Prelude (Num(..),Int,($),(+),(-),fromInteger,Integral,Integer,(>),toInteger,maxBound,quotRem)
+import safe qualified Data.Bits as B (Bits(..),FiniteBits(..))
+import safe qualified Data.Word as W (Word)
+-- import qualified Data.Vector.Unboxed as V
+import GHC.Exts
+import GHC.Integer.Logarithms
 
 -- | return the maximum value storable in a Word
 wordMax :: (Integral a) => a
@@ -37,15 +40,16 @@ wordMax = fromInteger $ toInteger (maxBound::W.Word)
 
 -- | return the bitSize of a Word
 wordSize :: Int
-wordSize = B.bitSize (0::W.Word)
+wordSize = B.finiteBitSize (0::W.Word)
 {-# INLINE wordSize #-}
 
 -- | determine the needed storage for a bitlength in Words
 sizeinWords :: Int -> Int
 sizeinWords 0 = 1 -- or error? 0 bit len?!
-sizeinWords t = let (w,r) = (abs t) `quotRem` wordSize
+sizeinWords t = let (w,r) = abs t `quotRem` wordSize
                 in if r > 0 then w + 1 else w
-                                            
+
+{-                                            
 -- constant vectors for comparisons etc.
 -- | a vector of zeros of requested length
 zero :: Int -> V.Vector W.Word
@@ -59,11 +63,16 @@ two l = V.singleton 2 V.++ V.replicate (sizeinWords l - 1)  0
 -- | a vector of zeros of requested length, but least significant word 3
 three :: Int -> V.Vector W.Word
 three l = V.singleton 3 V.++ V.replicate (sizeinWords l - 1) 0
+-}
 
--- | returning the binary length of an Integer
-log2len :: (Integral a, B.Bits a) => a -> Int
+-- returning the binary length of an Integer, not sidechannel secure!
+-- | returning the binary length of an Integer, uses integer-gmp directly
+log2len :: Integer -> Int
+{-
 log2len 0 = 1
 log2len n = length (takeWhile (<=n) (iterate (*2) 1))
+-- -}
+log2len x = (I# (integerLog2# x)) + 1
 {-# INLINABLE log2len #-}
 
 -- | we want word w at position i to result in a word to multiply by, eliminating branching

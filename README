@@ -4,13 +4,6 @@ RSA just doesn't cut it anymore for fast public-key crypto. Keys are large for r
 Enter elliptic curves: smaller numbers are necessary and everything is faster. Maybe this library is not for embedded system usage, but now people can experiment with ECC for those use-cases where some form of RSA would be chosen otherwise.
 
 
-Timing Attack Resistance
-------------------------
-The point multiplication uses the montgomery ladder algorithm which should be timing attack resistant, but when mul by a number in binary form 1000..0 the operation gets strangely fast (us instead of ms) and 1000..0001 it is strangely slow (1.5 times), which hints to something fishy going on. More research will follow, but sidechannel-resistance is not totally out-of-focus. 
-Testing has given me the idea that the following-zeroes-case massively benefits from branch-prediction and the trailing-one-case throws it totally off (will have to check that on other CPUs). "More natural" numbers are safer (tested), but I wouldn't dare to say that the matter is resolved.
-P.S.: 2^N-1 does not show the cache-problem, only long rows of zeroes.
-
-
 Motivation
 ----------
-This is a side-project from which other people may benefit. Due to time-constraints, I can't work as much on it as I would like. If you use/like it or want to make some criticism heard, please write me an email.
+This is a side-project from which other people may benefit. Due to time-constraints, I can't work as much on it as I would like. If you use/like it or want to make some criticism heard, please write an email.

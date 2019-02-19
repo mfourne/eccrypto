@@ -1,30 +1,33 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Crypto.ECC.NIST.ECDH
--- Copyright   :  (c) Marcel Fourné 20[09..14]
+-- Module      :  Crypto.ECC.Weierstrass.ECDH
+-- Copyright   :  (c) Marcel Fourné 20[09..]
 -- License     :  BSD3
 -- Maintainer  :  Marcel Fourné (haskell@marcelfourne.de)
 -- Stability   :  experimental
 -- Portability :  Good
 --
--- basic ECDH functions using hecc
+-- basic ECDH, for testing only
 --
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
+{-# LANGUAGE Safe #-}
 
-module Crypto.ECC.NIST.ECDH
+module Crypto.ECC.Weierstrass.ECDH ( basicecdh
+                                   , EC
+                                   , ECPF
+                                   )
     where
 
-import Crypto.ECC.NIST.Base
--- import Crypto.ECC.NIST.StandardCurves
+import safe Crypto.ECC.Weierstrass.Internal
 
 -- private key dA of this side and public key qB of the communication partner, returning the simple x coordinate as result
 -- to be executed on both sides with fitting parameters...
 -- d = pickOne [1..N-1]
 -- q = pmul G d
 -- | basic ecdh for testing
-basicecdh :: EC Integer -> Integer -> ECPF Integer -> Integer
-basicecdh c dA qB = if ison c qB then let (x,_) = affine c $ pmul c qB dA
-                                      in x
+basicecdh :: EC Integer -> ECPF Integer -> Integer -> Integer
+basicecdh c qB dA = if ison c qB then fst $ affine c $ pmul c qB dA
                     else error "point not on curve"
+
