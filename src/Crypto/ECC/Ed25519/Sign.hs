@@ -13,10 +13,9 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Trustworthy, ScopedTypeVariables, PackageImports, NoImplicitPrelude #-}
+{-# LANGUAGE Safe, ScopedTypeVariables, NoImplicitPrelude #-}
 
 module Crypto.ECC.Ed25519.Sign ( genkeys
-                               , genkeysSimple
                                , publickey
                                , dsign
                                , sign
@@ -34,27 +33,22 @@ where
 
 import safe Crypto.ECC.Ed25519.Internal.Ed25519
 
-import safe Prelude ((==),show,($),(<),IO,return,pure,Either(Left,Right),String,(&&))
+import safe Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&),take)
 import safe qualified Crypto.Fi as FP
 import safe qualified Data.ByteString as BS
-import qualified "crypto-api" Crypto.Random as CR
+import safe qualified System.Random as R
 
 -- | generate a new key pair (secret and derived public key) using some external entropy
--- | This may be insecure, depending on your environment, so it's better to use the genkeys function and supply a random number generator which is secure for your usage case!
-genkeysSimple :: IO (Either String (SecKey,PubKey))
-genkeysSimple = do
-  (g :: CR.SystemRandom) <- CR.newGenIO
-  return $ genkeys g
-
--- | generate a new key pair (secret and derived public key) using the supplied randomness-generator
-genkeys :: (CR.CryptoRandomGen g) => g -> Either String (SecKey,PubKey)
-genkeys g = case CR.genBytes 32 g of
-  Left e -> Left (show e)
-  Right (sk',_) -> let sk = SecKeyBytes sk'
-                       derived = publickey sk
-                  in case derived of
-                       Left e -> Left e
-                       Right pk -> Right (sk,pk)
+-- | This may be insecure, depending on your environment, so for your usage case you may need to implement some better key generator!
+genkeys :: IO (Either String (SecKey,PubKey))
+genkeys = do
+  g <- R.getStdGen
+  let bytes = R.randoms g
+      sk = SecKeyBytes $ BS.pack $ take 32 bytes
+      derived = publickey sk
+  return $ case derived of
+    Left e -> Left e
+    Right pk -> Right (sk,pk)
 
 -- | derive public key from secret key
 publickey :: SecKey -> Either String PubKey

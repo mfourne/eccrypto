@@ -19,7 +19,7 @@ import Crypto.ECC.Weierstrass.Internal.Curvemath
 import Crypto.ECC.Weierstrass.StandardCurves
 import Crypto.ECC.Weierstrass.ECDSA
 import Crypto.ECC.Weierstrass.ECDH
-import Control.Monad.Random
+import qualified System.Random as R
 import Criterion
 import Criterion.Main
 import qualified Crypto.ECC.Ed25519.Sign as ED
@@ -37,8 +37,8 @@ main = do
       pkfix = C8.pack "\185`\134^:gJw\146E\137@dw1\243w\212\178\213ry\140\159\137\&7yT+Y\156\EM"
       skfix = C8.pack "\131\190G\200\SYN\191&<\ETBd\223W\145}3\247#8\133\195\NUL\139\&8\138\197\132\191\255\SOC/\SOH"
       sigfix = C8.pack "S\EM\199\149\135\DC4Zr\242=\227(\139D\US,\232\159\210m\131\176\145\155\189\166Gl\186X\157\149U(zhd\224\133\DC1\237\FS\DLE\DC3\223S\153\218\214)\219o\177\n\248F\223^A\236\196\175N\STX"
-  k13' <- evalRandIO $ getRandomR (1,stdc_p p256)
-  Right (sk,pk) <- ED.genkeysSimple
+  k13' <- R.getStdRandom (R.randomR (1,stdc_p p256)) -- evalRandIO $ getRandomR (1,stdc_p p256)
+  Right (sk,pk) <- ED.genkeys
   defaultMain [ bgroup "NIST P-256" [ bench "ECDHp256" $ whnf (basicecdh c1 p1) k13'
                                     , bench "ECDSAp256 sign" $ whnf (basicecdsa (BS.pack [0..255]) rand) rand
                                     , bench "ECDSAp256 verify" $ whnf (\x -> basicecdsaVerify pub (r,x) (BS.pack [0..255])) s

@@ -12,7 +12,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 
 module Crypto.ECC.Weierstrass.ECDSA ( basicecdsa
                                     , basicecdsaVerify
@@ -24,9 +24,10 @@ import safe Crypto.ECC.Weierstrass.Internal.Curvemath
 import safe Crypto.ECC.Weierstrass.StandardCurves
 import safe qualified Crypto.Fi as FP
 import safe qualified Crypto.ECC.Ed25519.Internal as Ed
-import safe qualified Data.Digest.Pure.SHA as H
+-- import safe qualified Data.Digest.Pure.SHA as H
+import qualified Crypto.Hash.SHA512 as H
 import safe qualified Data.ByteString as BS
-import safe qualified Data.ByteString.Lazy as BSL
+-- import safe qualified Data.ByteString.Lazy as BSL
 
 -- | basic ecdsa for testing
 basicecdsa :: BS.ByteString -> Integer -> Integer -> Either String (Integer,Integer)
@@ -57,4 +58,5 @@ basicecdsaVerify dB (r,s) m = let curve =  ECi (stdc_l p256) (stdc_b p256) (stdc
 
 -- | using SHA-256
 h :: BS.ByteString -> BS.ByteString
-h bs = BSL.toStrict $ H.bytestringDigest $ H.sha256 $ BSL.fromStrict bs
+-- h bs = BSL.toStrict $ H.bytestringDigest $ H.sha256 $ BSL.fromStrict bs
+h = H.hash

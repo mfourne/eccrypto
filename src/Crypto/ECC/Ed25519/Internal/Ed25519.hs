@@ -16,7 +16,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, ScopedTypeVariables, NoImplicitPrelude #-}
+{-# LANGUAGE Trustworthy, ScopedTypeVariables, NoImplicitPrelude #-}
 
 module Crypto.ECC.Ed25519.Internal.Ed25519 where
 
@@ -25,8 +25,9 @@ import safe qualified Data.Bits as B (shift,(.&.),(.|.),xor)
 import safe qualified Prelude as P (fromInteger,toInteger)
 import safe qualified Crypto.Fi as FP
 import safe qualified Data.ByteString as BS
-import safe qualified Data.ByteString.Lazy as BSL
-import safe qualified Data.Digest.Pure.SHA as H
+-- import safe qualified Data.ByteString.Lazy as BSL
+-- import safe qualified Data.Digest.Pure.SHA as H
+import qualified Crypto.Hash.SHA512 as H
 import safe qualified Data.Word as W (Word8)
 
 --  a point on the twisted Edwards curve, affine coordinates, neutral element (0,1)
@@ -91,8 +92,8 @@ i = FP.fromInteger b 19681161376707505956807079304988542015446066515923890162744
 
 -- | wrapper for our hash function
 h :: BS.ByteString -> BS.ByteString
-h bs = BSL.toStrict $ H.bytestringDigest $ H.sha512 $ BSL.fromStrict bs
--- h = H.hash
+-- h bs = BSL.toStrict $ H.bytestringDigest $ H.sha512 $ BSL.fromStrict bs
+h = H.hash
 {-# INLINABLE h #-}
 
 -- | the prehash function, id in PureEdDSA
