@@ -12,8 +12,10 @@
 -- TODO: convert code to portable implementation and get rid of Integer
 -----------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, ScopedTypeVariables, NoImplicitPrelude #-}
+{-# LANGUAGE Safe #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
 
 module Crypto.ECC.Ed25519.Sign ( genkeys
                                , publickey
@@ -33,19 +35,30 @@ where
 
 import safe Crypto.ECC.Ed25519.Internal.Ed25519
 
-import safe Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&),take)
+import safe Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&))
 import safe qualified Crypto.Fi as FP
 import safe qualified Data.ByteString as BS
+#ifdef linux_HOST_OS
+import safe qualified Data.ByteString.Lazy.Char8 as BS8
+#endif
+#ifndef linux_HOST_OS
 import safe qualified System.Random as R
+import safe Prelude (take)
+#endif
 
 -- | generate a new key pair (secret and derived public key) using some external entropy
 -- | This may be insecure, depending on your environment, so for your usage case you may need to implement some better key generator!
 genkeys :: IO (Either String (SecKey,PubKey))
 genkeys = do
+#ifdef linux_HOST_OS
+  bytes <- BS8.readFile "/dev/urandom"
+  let sk = SecKeyBytes $ BS8.toStrict $ BS8.take 32 bytes
+#else
   g <- R.getStdGen
   let bytes = R.randoms g
       sk = SecKeyBytes $ BS.pack $ take 32 bytes
-      derived = publickey sk
+#endif
+  let derived = publickey sk
   return $ case derived of
     Left e -> Left e
     Right pk -> Right (sk,pk)
