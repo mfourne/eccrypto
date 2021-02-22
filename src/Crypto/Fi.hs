@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, BangPatterns, NoImplicitPrelude #-}
+{-# LANGUAGE Trustworthy, BangPatterns, NoImplicitPrelude #-}
 
 module Crypto.Fi ( FPrime
                  , eq
@@ -35,12 +35,13 @@ module Crypto.Fi ( FPrime
                  )
        where
 
-import safe Prelude ((==),Integer,Int,Bool(),($),(+),(-),(*),(^),mod,otherwise,(<))
-import safe qualified Prelude as P (fromInteger,toInteger)
-import safe qualified Data.Bits as B (Bits(..),shift,(.&.))
+import Prelude ((==),Integer,Int,Bool(),($),(+),(-),(*),(^),mod,otherwise,(<))
+import qualified Prelude as P (fromInteger,toInteger)
+import qualified Data.Bits as B (Bits(..),shift,(.&.))
 import safe Crypto.Common (log2len)
 
 -- | a simple wrapper to ease transition
+{-@ type FBase = {v:FPrime|v > 0} @-}
 type FPrime = Integer
 
 -- | most trivial (==) wrapper
@@ -54,6 +55,7 @@ add !a !b = a + b
 {-# INLINABLE add #-}
 
 -- | (+) in the field
+{-@ addr :: FBase -> FPrime -> FPrime -> FPrime @-}
 addr :: FPrime -> FPrime -> FPrime -> FPrime
 addr !p !a !b = redc p $ a + b
 {-# INLINABLE addr #-}
@@ -64,11 +66,13 @@ sub !a !b = a - b
 {-# INLINABLE sub #-}
 
 -- | (-) in the field
+{-@ subr :: FBase -> FPrime -> FPrime -> FPrime @-}
 subr :: FPrime -> FPrime -> FPrime -> FPrime
 subr !p !a !b = redc p (a - b)
 {-# INLINABLE subr #-}
 
 -- | negation in the field
+{-@ neg :: FBase -> FPrime -> FPrime @-}
 neg :: FPrime -> FPrime -> FPrime
 neg !p !a = redc p (-a)
 {-# INLINABLE neg #-}
@@ -78,6 +82,7 @@ shift :: FPrime -> Int -> FPrime
 shift !a !b = B.shift a b
 
 -- | modular reduction, a simple wrapper around mod
+{-@ redc :: FBase -> FPrime -> FPrime @-}
 redc :: FPrime -> FPrime -> FPrime
 redc !p !a = a `mod` p
 {-# INLINABLE redc #-}
@@ -88,16 +93,19 @@ mul !a !b = a * b
 {-# INLINABLE mul #-}
 
 -- | field multiplication, a * b `mod` p
+{-@ mulr :: FBase -> FPrime -> FPrime -> FPrime @-}
 mulr :: FPrime -> FPrime -> FPrime -> FPrime
 mulr !p !a !b = redc p $ a * b
 {-# INLINABLE mulr #-}
 
 -- | simple squaring in the field
+{-@ square :: FBase -> FPrime -> FPrime @-}
 square :: FPrime -> FPrime -> FPrime
 square !p !a = redc p (a ^ (2::Int))
 {-# INLINABLE square #-}
 
 -- | the power function in the field, for 1>= k < p
+{-@ pow :: FBase -> FPrime -> Integer -> FPrime @-}
 pow :: FPrime -> FPrime -> Integer -> FPrime
 {-
 pow !p !a !k = let binlog = log2len k
@@ -112,6 +120,7 @@ pow !p !a' !k = let a = redc p a'
                     binlog = log2len a
                     alleeins = fromInteger binlog (2^binlog - 1)
                     eins = fromInteger binlog 1
+                    {-@ lazy ex @-}
                     ex erg i
                       | i < 0 = erg
                       | otherwise =
@@ -123,10 +132,12 @@ pow !p !a' !k = let a = redc p a'
 -- -}
 
 -- | field inversion
+{-@ inv :: FBase -> FPrime -> FPrime @-}
 inv :: FPrime -> FPrime -> FPrime
 inv !p !a = pow p a (toInteger p - 2)
 
 -- | conversion wrapper with a limit
+{-@ assume fromInteger :: Int -> a:FPrime -> {v:Integer| ((a mod 2 /= 0) => v > 0) && (v >= 0)} @-}
 fromInteger :: Int -> FPrime -> Integer
 fromInteger !l !a = P.fromInteger (a `mod` (2^l))
 {-# INLINABLE fromInteger #-}

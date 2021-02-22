@@ -30,8 +30,9 @@ Extra-Source-Files:  test/P192
 Library
   hs-source-dirs: src
   Build-Depends:
-                base >= 4 && < 5
-              , bytestring >= 0.10 && < 0.11
+                liquidhaskell
+              , liquid-base
+              , liquid-bytestring
               , cryptohash-sha512 >= 0.11 && < 0.12
               , integer-gmp >= 1.0 && < 1.1
   if os(windows)
@@ -51,6 +52,7 @@ Library
               -Wall
               -O2
               -feager-blackholing
+              -fplugin=LiquidHaskell
 
 Test-Suite eccrypto-testsuite
   Type: detailed-0.9

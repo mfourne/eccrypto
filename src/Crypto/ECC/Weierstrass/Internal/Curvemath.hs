@@ -13,19 +13,20 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, GADTs, DeriveDataTypeable, NoImplicitPrelude, StrictData #-}
+{-# LANGUAGE Trustworthy, GADTs, DeriveDataTypeable, NoImplicitPrelude, StrictData #-}
 
 module Crypto.ECC.Weierstrass.Internal.Curvemath where
 
-import safe Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool,(++),(-),otherwise,(<),mod,(^),(+))
-import safe qualified Data.Bits as B ((.&.))
-import safe Data.Typeable(Typeable)
+import Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool,(++),(-),otherwise,(<),mod,(^),(+))
+import qualified Data.Bits as B ((.&.))
+import Data.Typeable(Typeable)
 -- import safe Crypto.Common
 import safe qualified Crypto.Fi as FP
 -- import safe qualified Crypto.FPrime as FP
 -- import safe qualified Crypto.F2 as F2
 
 -- | all Elliptic Curves, the parameters being the BitLength L, A, B and P
+{-@ data EC a where ECi :: Int -> FPrime -> FBase -> FPrime -> EC FPrime @-}
 data EC a where
   -- the Integer Curves, having the form y^2*z=x^3-3*x*z^2+B*z^3 mod P (projective with a = -3); relevant for "ison"
   ECi :: Int          -- the effective bitlength
@@ -302,6 +303,8 @@ pmul curve@(ECi l _ p _) (ECPp x y z)  k =
   let alleeins = FP.fromInteger l (2^l-1)
       eins = FP.fromInteger l 1
       k' = k `mod` (p+1)
+      {-@ ex :: ECPF FP.FPrime -> j:Int -> ECPF FP.FPrime / [j + 1] @-}
+      ex :: ECPF FP.FPrime -> Int -> ECPF FP.FPrime
       ex erg j
         | j < 0 = erg
         | otherwise = let s = FP.condBit k' j

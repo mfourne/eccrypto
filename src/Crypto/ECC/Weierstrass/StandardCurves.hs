@@ -18,19 +18,22 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, DeriveDataTypeable, NoImplicitPrelude #-}
+{-# LANGUAGE Trustworthy, DeriveDataTypeable, NoImplicitPrelude #-}
 
 module Crypto.ECC.Weierstrass.StandardCurves
     where
 
-import safe Prelude(Int)
+import Prelude(Int)
 import safe Crypto.ECC.Weierstrass.Internal (FPrime)
 -- import safe Crypto.ECC.Weierstrass.Internal (FPrime,F2)
 import safe qualified Crypto.Fi as FP (fromInteger)
 -- import safe qualified Crypto.F2 as F2 (fromInteger)
-import safe Data.Typeable(Typeable)
+import Data.Typeable(Typeable)
 
 -- | Datatype for defined Standard Curves
+{-@ data StandardCurve = 
+    StandardCurve {stdc_l::Int,stdc_p::FBase,stdc_r::FBase,stdc_b::FPrime,stdc_xp::FPrime,stdc_yp::FPrime}
+@-}
 data StandardCurve = 
   -- Curves on Prime Fields
     StandardCurve {stdc_l::Int,stdc_p::FPrime,stdc_r::FPrime,stdc_b::FPrime,stdc_xp::FPrime,stdc_yp::FPrime}
