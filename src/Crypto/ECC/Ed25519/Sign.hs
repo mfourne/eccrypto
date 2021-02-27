@@ -14,7 +14,7 @@
 
 {-# LANGUAGE CPP #-}
 #ifndef mingw32_HOST_OS
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 #else
 {-# LANGUAGE Trustworthy #-}
 #endif
@@ -40,14 +40,14 @@ where
 
 import safe Crypto.ECC.Ed25519.Internal.Ed25519
 
-import Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&))
+import safe Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&))
 import safe qualified Crypto.Fi as FP
-import qualified Data.ByteString as BS
+import safe qualified Data.ByteString as BS
 #ifndef mingw32_HOST_OS
-import qualified Data.ByteString.Char8 as BS8
+import safe qualified Data.ByteString.Char8 as BS8
 #else
 import qualified Crypto.Random as R
-import Prelude (show)
+import safe Prelude (show)
 #endif
 
 -- | generate a new key pair (secret and derived public key) using some external entropy

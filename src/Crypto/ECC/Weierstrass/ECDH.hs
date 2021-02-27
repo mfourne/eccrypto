@@ -12,7 +12,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 
 module Crypto.ECC.Weierstrass.ECDH ( basicecdh
                                    , EC

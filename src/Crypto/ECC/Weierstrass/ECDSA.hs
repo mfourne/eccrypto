@@ -29,8 +29,9 @@ import qualified Crypto.Hash.SHA512 as H
 import qualified Data.ByteString as BS
 -- import safe qualified Data.ByteString.Lazy as BSL
 
+{-@ assume H.hash :: _ -> {v:BS.ByteString|bslen v == 64} @-}
+
 -- | basic ecdsa for testing
-{-@ ignore basicecdsa @-}
 basicecdsa :: BS.ByteString -> Integer -> Integer -> Either String (Integer,Integer)
 basicecdsa bs dA k = 
   let curve = ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r p256)
@@ -45,7 +46,6 @@ basicecdsa bs dA k =
      else Left "fail"
 
 -- | basic ECDSA verification
-{-@ ignore basicecdsaVerify @-}
 basicecdsaVerify :: ECPF Integer -> (Integer,Integer) -> BS.ByteString -> Bool
 basicecdsaVerify dB (r,s) m = let curve =  ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r p256)
                                   order = stdc_r p256

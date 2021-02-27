@@ -13,13 +13,13 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Trustworthy, GADTs, DeriveDataTypeable, NoImplicitPrelude, StrictData #-}
+{-# LANGUAGE Safe, GADTs, DeriveDataTypeable, NoImplicitPrelude, StrictData #-}
 
 module Crypto.ECC.Weierstrass.Internal.Curvemath where
 
-import Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool,(++),(-),otherwise,(<),mod,(^),(+))
-import qualified Data.Bits as B ((.&.))
-import Data.Typeable(Typeable)
+import safe Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool,(++),(-),otherwise,(<),mod,(^),(+))
+import safe qualified Data.Bits as B ((.&.))
+import safe Data.Typeable(Typeable)
 -- import safe Crypto.Common
 import safe qualified Crypto.Fi as FP
 -- import safe qualified Crypto.FPrime as FP
@@ -303,7 +303,7 @@ pmul curve@(ECi l _ p _) (ECPp x y z)  k =
   let alleeins = FP.fromInteger l (2^l-1)
       eins = FP.fromInteger l 1
       k' = k `mod` (p+1)
-      {-@ ex :: ECPF FP.FPrime -> j:Int -> ECPF FP.FPrime / [j + 1] @-}
+      {-@ ex :: _ -> j:_ -> _ / [j + 1] @-}
       ex :: ECPF FP.FPrime -> Int -> ECPF FP.FPrime
       ex erg j
         | j < 0 = erg

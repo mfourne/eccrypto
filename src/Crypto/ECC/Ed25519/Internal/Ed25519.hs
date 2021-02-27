@@ -20,15 +20,16 @@
 
 module Crypto.ECC.Ed25519.Internal.Ed25519 where
 
-import Prelude (Eq,Show,(==),Int,Bool,($),(-),otherwise,(<),(^),mod,Either(Left,Right),String,Integer,abs,id)
-import qualified Data.Bits as B (shift,(.&.),(.|.),xor)
-import qualified Prelude as P (fromInteger,toInteger)
+import safe Prelude (Eq,Show,(==),Int,Bool,($),(-),otherwise,(<),(^),mod,Either(Left,Right),String,Integer,abs,id)
+import safe qualified Data.Bits as B (shift,(.&.),(.|.),xor)
+import safe qualified Prelude as P (fromInteger,toInteger)
 import safe qualified Crypto.Fi as FP
-import qualified Data.ByteString as BS
+import safe qualified Data.ByteString as BS
 -- import safe qualified Data.ByteString.Lazy as BSL
 -- import safe qualified Data.Digest.Pure.SHA as H
 import qualified Crypto.Hash.SHA512 as H
-import qualified Data.Word as W (Word8)
+import safe qualified Data.Word as W (Word8)
+import           Data.Either ()
 
 --  a point on the twisted Edwards curve, affine coordinates, neutral element (0,1)
 -- | twisted Edwards curve point, extended point format (x,y,z,t), neutral element (0,1,1,0), c=1, a=-1 https://hyperelliptic.org/EFD/g1p/auto-twisted-extended-1.html, after "Twisted Edwards curves revisited" eprint 2008/522
@@ -314,6 +315,7 @@ convert64BEtoLE8Byte z = let lowest =  (P.fromInteger $          z `mod` (2^( 8:
                          in BS.pack [lowest,lower,low,midlow,midhigh,high,higher,highest]
 
 -- | converts 32 little endian bytes into one FPrime
+{-@ getFPrime32 :: bs:_ -> {v:Either String FP.FPrime|bslen bs < 32 <=> isLeft v } @-}
 getFPrime32 :: BS.ByteString -> Either String FP.FPrime
 getFPrime32 bs | BS.length bs < 32 = Left "ByteString does not contain at least 32 Bytes"
                | otherwise = do
