@@ -26,7 +26,7 @@ import safe qualified Crypto.Fi as FP
 import safe qualified Crypto.ECC.Ed25519.Internal as Ed
 -- import safe qualified Data.Digest.Pure.SHA as H
 import qualified Crypto.Hash.SHA512 as H
-import qualified Data.ByteString as BS
+import safe qualified Data.ByteString as BS
 -- import safe qualified Data.ByteString.Lazy as BSL
 
 {-@ assume H.hash :: _ -> {v:BS.ByteString|bslen v == 64} @-}
