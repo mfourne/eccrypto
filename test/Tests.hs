@@ -21,6 +21,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as BS16
 import qualified Crypto.ECC.Ed25519.Sign as ED
 import qualified Crypto.ECC.Ed25519.Internal.Ed25519 as EDi
+import qualified Data.Either as DE
 
 tests :: IO [Test]
 tests =  do
@@ -98,7 +99,7 @@ testECDSA rand = let c1 = ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r 
                      p1 = ECPp  (stdc_xp p256) (stdc_yp p256) 1
                      privk =  93151144317885463729940025875124971369191600717633105593660251066268358953543
                      pub = ECPp 49820351311576200663416054279040683857746363070013834679270516876052449262634 112699216918648906269327207660688102462037435574122213014814143327521473380783 18523244708209522220381629035092551864971849988089188687523906648093563992014
-                     sig = N.basicecdsa (BS.pack [0..255]) privk rand 
+                     sig = N.basicecdsa (BS.pack [0..255]) privk rand
                      Right (r,s) = sig
                      instanz = TestInstance { run = return $ Finished $ if N.basicecdsaVerify pub (r,s) (BS.pack [0..255]) then Pass else Fail "fehlgeschlagen"
                                             , name = "ECDSAp256 sign+verify" ++ " with k = " ++ (show rand)
@@ -111,8 +112,8 @@ testECDSA rand = let c1 = ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r 
 
 testEd25519 :: BS.ByteString -> Test
 testEd25519 line = let x = C8.split ':' line
-                       sk = fst $ BS16.decode $ head x
-                       m = fst $ BS16.decode $ x !! 2
+                       sk = DE.fromRight (BS.singleton 0) $ BS16.decode $ head x
+                       m = DE.fromRight (BS.singleton 0) $ BS16.decode $ x !! 2
                        instanz = TestInstance { run = let mytest :: Either String ED.VerifyResult
                                                           mytest = do
                                                             pubkey <- ED.publickey $ EDi.SecKeyBytes sk

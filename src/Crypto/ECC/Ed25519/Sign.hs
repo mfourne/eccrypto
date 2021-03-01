@@ -14,7 +14,7 @@
 
 {-# LANGUAGE CPP #-}
 #ifndef mingw32_HOST_OS
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 #else
 {-# LANGUAGE Trustworthy #-}
 #endif
@@ -38,16 +38,16 @@ module Crypto.ECC.Ed25519.Sign ( genkeys
                                )
 where
 
-import safe Crypto.ECC.Ed25519.Internal.Ed25519
+import Crypto.ECC.Ed25519.Internal.Ed25519
 
-import safe Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&))
-import safe qualified Crypto.Fi as FP
-import safe qualified Data.ByteString as BS
+import Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&))
+import qualified Crypto.Fi as FP
+import qualified Data.ByteString as BS
 #ifndef mingw32_HOST_OS
-import safe qualified Data.ByteString.Char8 as BS8
+import qualified Data.ByteString.Char8 as BS8
 #else
 import qualified Crypto.Random as R
-import safe Prelude (show)
+import Prelude (show)
 #endif
 
 -- | generate a new key pair (secret and derived public key) using some external entropy

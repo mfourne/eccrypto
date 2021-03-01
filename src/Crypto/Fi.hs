@@ -9,11 +9,11 @@
 --
 -- This is a thin wrapper around Integer to ease transition toward FPrime
 -- WARNING! Re Timing-Attacks: This backend is not fully timing attack resistant.
--- 
+--
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, BangPatterns, NoImplicitPrelude #-}
+{-# LANGUAGE Trustworthy, BangPatterns, NoImplicitPrelude #-}
 
 module Crypto.Fi ( FPrime
                  , eq
@@ -35,10 +35,10 @@ module Crypto.Fi ( FPrime
                  )
        where
 
-import safe Prelude ((==),Integer,Int,Bool(),($),(+),(-),(*),(^),mod,otherwise,(<))
-import safe qualified Prelude as P (fromInteger,toInteger)
-import safe qualified Data.Bits as B (Bits(..),shift,(.&.))
-import safe Crypto.Common (log2len)
+import Prelude ((==),Integer,Int,Bool(),($),(+),(-),(*),(^),mod,otherwise,(<))
+import qualified Prelude as P (fromInteger,toInteger)
+import qualified Data.Bits as B (Bits(..),shift,(.&.))
+import Crypto.Common (log2len)
 
 -- | a simple wrapper to ease transition
 {-@ type FBase = {v:FPrime|v > 0} @-}

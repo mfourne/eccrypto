@@ -9,7 +9,7 @@
 --
 -- ECC Base algorithms & point formats for NIST Curves as specified in NISTReCur.pdf[http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf]
 -- Re Timing-Attacks: We depend on (==) being resistant for Integer.
--- 
+--
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
@@ -27,9 +27,9 @@ module Crypto.Common ( wordMax
                      )
        where
 
-import safe Prelude (Num(..),($),(+),(-),fromInteger,Integral,Integer,(>),toInteger,maxBound,quotRem)
-import safe qualified Data.Bits as B (Bits(..),FiniteBits(..))
-import safe qualified Data.Word as W (Word)
+import Prelude (Num(..),($),(+),(-),fromInteger,Integral,Integer,(>),toInteger,maxBound,quotRem)
+import qualified Data.Bits as B (Bits(..),FiniteBits(..))
+import qualified Data.Word as W (Word)
 -- import qualified Data.Vector.Unboxed as V
 import GHC.Exts
 import GHC.Integer.Logarithms
@@ -50,7 +50,7 @@ sizeinWords 0 = 1 -- or error? 0 bit len?!
 sizeinWords t = let (w,r) = abs t `quotRem` wordSize
                 in if r > 0 then w + 1 else w
 
-{-                                            
+{-
 -- constant vectors for comparisons etc.
 -- | a vector of zeros of requested length
 zero :: Int -> V.Vector W.Word

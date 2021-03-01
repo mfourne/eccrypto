@@ -20,20 +20,20 @@ module Crypto.ECC.Weierstrass.ECDSA ( basicecdsa
                                     )
     where
 
-import safe Crypto.ECC.Weierstrass.Internal.Curvemath
-import safe Crypto.ECC.Weierstrass.StandardCurves
-import safe qualified Crypto.Fi as FP
-import safe qualified Crypto.ECC.Ed25519.Internal as Ed
--- import safe qualified Data.Digest.Pure.SHA as H
+import Crypto.ECC.Weierstrass.Internal.Curvemath
+import Crypto.ECC.Weierstrass.StandardCurves
+import qualified Crypto.Fi as FP
+import qualified Crypto.ECC.Ed25519.Internal as Ed
+-- import qualified Data.Digest.Pure.SHA as H
 import qualified Crypto.Hash.SHA512 as H
-import safe qualified Data.ByteString as BS
--- import safe qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString as BS
+-- import qualified Data.ByteString.Lazy as BSL
 
 {-@ assume H.hash :: _ -> {v:BS.ByteString|bslen v == 64} @-}
 
 -- | basic ecdsa for testing
 basicecdsa :: BS.ByteString -> Integer -> Integer -> Either String (Integer,Integer)
-basicecdsa bs dA k = 
+basicecdsa bs dA k =
   let curve = ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r p256)
       bPoint = ECPp  (stdc_xp p256) (stdc_yp p256) 1
       order = stdc_r p256

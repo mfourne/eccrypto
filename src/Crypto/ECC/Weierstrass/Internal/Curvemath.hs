@@ -9,17 +9,17 @@
 --
 -- This module contain the internal functions. It's use should be limited to the ECDH and ECDSA modules, which export certain types without constructors, so the timing attack surface is only over the verified functions.
 -- ECC Base algorithms & point formats for NIST Curves as specified in NISTReCur.pdf[http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf]
--- 
+--
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Safe, GADTs, DeriveDataTypeable, NoImplicitPrelude, StrictData #-}
+{-# LANGUAGE Trustworthy, GADTs, DeriveDataTypeable, NoImplicitPrelude, StrictData #-}
 
 module Crypto.ECC.Weierstrass.Internal.Curvemath where
 
-import safe Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool,(++),(-),otherwise,(<),mod,(^),(+))
-import safe qualified Data.Bits as B ((.&.))
-import safe Data.Typeable(Typeable)
+import Prelude (Eq,Show,(==),(&&),Integer,Int,show,Bool,(++),(-),otherwise,(<),mod,(^),(+))
+import qualified Data.Bits as B ((.&.))
+import Data.Typeable(Typeable)
 -- import safe Crypto.Common
 import safe qualified Crypto.Fi as FP
 -- import safe qualified Crypto.FPrime as FP
@@ -55,7 +55,7 @@ instance Show (EC a) where
 -- parametrised by the kind of numbers one which it may be computed
 -- point formats may be translated through functions
 -- | data of Elliptic Curve Points
-data ECPF a where 
+data ECPF a where
   -- Elliptic Curve Point Projective coordinates, three parameters x, y and z, like affine (x/z,y/z)
   ECPp :: FP.FPrime      -- x
        -> FP.FPrime      -- y
@@ -178,7 +178,7 @@ padd (ECi _ b p _) (ECPp x1 y1 z1) (ECPp x2 y2 z2)
         | isinf l p1 = p2
         | isinf l p2 = p1
         | p1==p2 = pdouble curve p1
-        | otherwise = 
+        | otherwise =
             let a = FP.subr p (FP.mulr p y2 z1) (FP.mulr p y1 z2)
                 b = FP.subr p (FP.mulr p x2 z1) (FP.mulr p x1 z2)
                 c = FP.subr p (FP.subr p (FP.mulr p (FP.pow p a (2::Integer)) $ FP.mulr p z1 z2) (FP.pow p b (3::Integer))) (FP.mulr p (FP.fromInteger l 2) $ FP.mulr p (FP.pow p b (2::Integer)) $ FP.mulr p x1 z2)
@@ -240,7 +240,7 @@ padd (ECi _ b p _) (ECPp x1 y1 z1) (ECPp x2 y2 z2)
         | isinf l p1 = p2
         | isinf l p2 = p1
         | p1==p2 = pdouble curve p1
-        | otherwise = 
+        | otherwise =
             let a = F2.addr p (F2.mulr p y1 z2) (F2.mulr p z1 y2)
                 b = F2.addr p (F2.mulr p x1 z2) (F2.mulr p z1 x2)
                 c = F2.pow p b (2::Integer)
@@ -318,7 +318,7 @@ pmul curve@(ECi l _ p _) (ECPp x y z)  k =
 -- -}
 {-
 pmul curve@(ECi l _ p _) b@ECPp{} k'  =
--- {- 
+-- {-
   let k = FP.redc (FP.subr p p (FP.fromInteger l 1)) k'
       ex p1 p2 i
         | i < 0 = p1

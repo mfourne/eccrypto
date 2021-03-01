@@ -20,15 +20,15 @@
 
 module Crypto.ECC.Ed25519.Internal.Ed25519 where
 
-import safe Prelude (Eq,Show,(==),Int,Bool,($),(-),otherwise,(<),(^),mod,Either(Left,Right),String,Integer,abs,id)
-import safe qualified Data.Bits as B (shift,(.&.),(.|.),xor)
-import safe qualified Prelude as P (fromInteger,toInteger)
-import safe qualified Crypto.Fi as FP
-import safe qualified Data.ByteString as BS
--- import safe qualified Data.ByteString.Lazy as BSL
--- import safe qualified Data.Digest.Pure.SHA as H
+import Prelude (Eq,Show,(==),Int,Bool,($),(-),otherwise,(<),(^),mod,Either(Left,Right),String,Integer,abs,id)
+import qualified Data.Bits as B (shift,(.&.),(.|.),xor)
+import qualified Prelude as P (fromInteger,toInteger)
+import qualified Crypto.Fi as FP
+import qualified Data.ByteString as BS
+-- import qualified Data.ByteString.Lazy as BSL
+-- import qualified Data.Digest.Pure.SHA as H
 import qualified Crypto.Hash.SHA512 as H
-import safe qualified Data.Word as W (Word8)
+import qualified Data.Word as W (Word8)
 import           Data.Either ()
 
 --  a point on the twisted Edwards curve, affine coordinates, neutral element (0,1)
@@ -226,7 +226,7 @@ pdouble (Point (x1,y1,z1,_)) =
 pmul :: Point -> FP.FPrime -> Point
 pmul (Point (x,y,z,_)) k' =
   let
-    {-@ ex :: _ -> j:_ -> _ / [j + 1] @-} 
+    {-@ ex :: _ -> j:_ -> _ / [j + 1] @-}
     ex :: Point -> Int -> Point
     ex erg j
         | j < 0 = erg
@@ -283,7 +283,7 @@ clamp bs = let num' = getFPrime32 bs
 -- | convert an 8 Byte little endian ByteString to either an error String (if too short) or a big endian FPrime
 convertLE8ByteTo64BE :: BS.ByteString -> Either String FP.FPrime
 convertLE8ByteTo64BE bs | BS.length bs < 8 = Left "ByteString does not contain at least 32 Bytes"
-                        | otherwise = 
+                        | otherwise =
                           let lowest =  bs `BS.index` 0
                               lower =   bs `BS.index` 1
                               low =     bs `BS.index` 2
@@ -292,7 +292,7 @@ convertLE8ByteTo64BE bs | BS.length bs < 8 = Left "ByteString does not contain a
                               high =    bs `BS.index` 5
                               higher =  bs `BS.index` 6
                               highest = bs `BS.index` 7
-                          in Right (P.fromInteger $  P.toInteger lowest  
+                          in Right (P.fromInteger $  P.toInteger lowest
                                       B..|. B.shift (P.toInteger lower)   8
                                       B..|. B.shift (P.toInteger low)     16
                                       B..|. B.shift (P.toInteger midlow)  24
