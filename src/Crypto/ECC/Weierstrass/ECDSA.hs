@@ -29,6 +29,8 @@ import qualified Crypto.Hash.SHA512 as H
 import safe qualified Data.ByteString as BS
 -- import safe qualified Data.ByteString.Lazy as BSL
 
+{-@ assume H.hash :: _ -> {v:BS.ByteString|bslen v == 64} @-}
+
 -- | basic ecdsa for testing
 basicecdsa :: BS.ByteString -> Integer -> Integer -> Either String (Integer,Integer)
 basicecdsa bs dA k = 

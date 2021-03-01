@@ -29,6 +29,7 @@ import safe qualified Data.ByteString as BS
 -- import safe qualified Data.Digest.Pure.SHA as H
 import qualified Crypto.Hash.SHA512 as H
 import safe qualified Data.Word as W (Word8)
+import           Data.Either ()
 
 --  a point on the twisted Edwards curve, affine coordinates, neutral element (0,1)
 -- | twisted Edwards curve point, extended point format (x,y,z,t), neutral element (0,1,1,0), c=1, a=-1 https://hyperelliptic.org/EFD/g1p/auto-twisted-extended-1.html, after "Twisted Edwards curves revisited" eprint 2008/522
@@ -62,17 +63,20 @@ type Message = BS.ByteString
 type SignedMessage = BS.ByteString
 
 -- | working on exactly 256 bits
+{-@ b :: {v:Int|v = 256} @-}
 b :: Int
 b = 256
 {-# INLINABLE b #-}
 
 -- | the large prime
+{-@ q :: FBase @-}
 q :: FP.FPrime
 -- q = FP.fromInteger b $ 2^(255::Integer) - 19
 q = FP.fromInteger b 57896044618658097711785492504343953926634992332820282019728792003956564819949
 {-# INLINABLE q #-}
 
 -- | curve parameter l, the group order, f.e. needed to use Farmat's little theorem
+{-@ l :: FBase @-}
 l :: FP.FPrime
 -- l = FP.addr q (FP.pow q (FP.fromInteger b 2) (FP.fromInteger b 252)) (FP.fromInteger b 27742317777372353535851937790883648493)
 l = FP.fromInteger b 7237005577332262213973186563042994240857116359379907606001950938285454250989
@@ -221,7 +225,10 @@ pdouble (Point (x1,y1,z1,_)) =
 -- | scalar multiplication, branchfree in k, pattern-matched branch on j (static known length of k)
 pmul :: Point -> FP.FPrime -> Point
 pmul (Point (x,y,z,_)) k' =
-  let ex erg j
+  let
+    {-@ ex :: _ -> j:_ -> _ / [j + 1] @-} 
+    ex :: Point -> Int -> Point
+    ex erg j
         | j < 0 = erg
         | otherwise = let s = FP.condBit k' j
                           realpattern = FP.mul alleeins s
@@ -308,6 +315,7 @@ convert64BEtoLE8Byte z = let lowest =  (P.fromInteger $          z `mod` (2^( 8:
                          in BS.pack [lowest,lower,low,midlow,midhigh,high,higher,highest]
 
 -- | converts 32 little endian bytes into one FPrime
+{-@ getFPrime32 :: bs:_ -> {v:Either String FP.FPrime|bslen bs < 32 <=> isLeft v } @-}
 getFPrime32 :: BS.ByteString -> Either String FP.FPrime
 getFPrime32 bs | BS.length bs < 32 = Left "ByteString does not contain at least 32 Bytes"
                | otherwise = do

@@ -27,6 +27,7 @@ import safe Crypto.ECC.Weierstrass.Internal
 -- d = pickOne [1..N-1]
 -- q = pmul G d
 -- | basic ecdh for testing
+{-@ ignore basicecdh @-}
 basicecdh :: EC Integer -> ECPF Integer -> Integer -> Integer
 basicecdh c qB dA = if ison c qB then fst $ affine c $ pmul c qB dA
                     else error "point not on curve"

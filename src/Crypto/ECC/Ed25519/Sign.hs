@@ -44,7 +44,7 @@ import safe Prelude ((==),($),(<),IO,return,pure,Either(Left,Right),String,(&&))
 import safe qualified Crypto.Fi as FP
 import safe qualified Data.ByteString as BS
 #ifndef mingw32_HOST_OS
-import safe qualified Data.ByteString.Lazy.Char8 as BS8
+import safe qualified Data.ByteString.Char8 as BS8
 #else
 import qualified Crypto.Random as R
 import safe Prelude (show)
@@ -56,7 +56,7 @@ genkeys :: IO (Either String (SecKey,PubKey))
 genkeys = do
 #ifndef mingw32_HOST_OS
   bytes <- BS8.readFile "/dev/urandom"
-  let sk = SecKeyBytes $ BS8.toStrict $ BS8.take 32 bytes
+  let sk = SecKeyBytes $ BS8.take 32 bytes
       derived = publickey sk
   return $ case derived of
     Left e -> Left e

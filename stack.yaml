@@ -1,0 +1,16 @@
+resolver: lts-17.3
+packages:
+- .
+extra-deps:
+- Diff-0.3.4
+- cryptohash-sha512-0.11.100.1
+- megaparsec-8.0.0
+- git: git@github.com:oquechy/liquidhaskell.git
+  commit: e622c02790acbd7b37fa60e7941143276c0da221
+  subdirs: 
+    - .
+    - liquid-base
+    - liquid-bytestring
+    - liquid-ghc-prim
+- git: git@github.com:ucsd-progsys/liquid-fixpoint.git
+  commit: 2e0f4762e635e7ff06d059a74978d0b4a7d69032

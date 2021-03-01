@@ -27,7 +27,7 @@ module Crypto.Common ( wordMax
                      )
        where
 
-import safe Prelude (Num(..),Int,($),(+),(-),fromInteger,Integral,Integer,(>),toInteger,maxBound,quotRem)
+import safe Prelude (Num(..),($),(+),(-),fromInteger,Integral,Integer,(>),toInteger,maxBound,quotRem)
 import safe qualified Data.Bits as B (Bits(..),FiniteBits(..))
 import safe qualified Data.Word as W (Word)
 -- import qualified Data.Vector.Unboxed as V
@@ -39,6 +39,7 @@ wordMax :: (Integral a) => a
 wordMax = fromInteger $ toInteger (maxBound::W.Word)
 
 -- | return the bitSize of a Word
+{-@ assume wordSize :: {v:Int|v /= 0} @-}
 wordSize :: Int
 wordSize = B.finiteBitSize (0::W.Word)
 {-# INLINE wordSize #-}
