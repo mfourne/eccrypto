@@ -111,8 +111,8 @@ testECDSA rand = let c1 = ECi (stdc_l p256) (stdc_b p256) (stdc_p p256) (stdc_r 
 
 testEd25519 :: BS.ByteString -> Test
 testEd25519 line = let x = C8.split ':' line
-                       sk = fst $ BS16.decode $ head x
-                       m = fst $ BS16.decode $ x !! 2
+                       Right sk = BS16.decode $ head x
+                       Right m = BS16.decode $ x !! 2
                        instanz = TestInstance { run = let mytest :: Either String ED.VerifyResult
                                                           mytest = do
                                                             pubkey <- ED.publickey $ EDi.SecKeyBytes sk
