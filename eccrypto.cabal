@@ -1,5 +1,5 @@
 Name:                eccrypto
-Version:             0.2.3.1
+Version:             0.2.3.2
 Synopsis:            Elliptic Curve Cryptography for Haskell
 Description:         Elliptic Curve Cryptography in Haskell, evolved for correctness and practical usability from higher-level libraries.
                      .
@@ -10,14 +10,14 @@ Description:         Elliptic Curve Cryptography in Haskell, evolved for correct
                      Also the scope was changed by selecting best internal formats and no longer trying to be overly general, allowing more optimizations.
 License:             BSD3
 License-file:        COPYING
-Copyright:       (c) Marcel Fourné, 2009-2019
+Copyright:       (c) Marcel Fourné, 2009-2025
 Author:              Marcel Fourné
 Maintainer:          Marcel Fourné (haskell@marcelfourne.de)
-Category:      Cryptography
-Stability:       beta
+Category:            Cryptography
+Stability:           beta
 Build-Type:          Simple
 Cabal-Version:       >=1.9
-Data-Files:      README
+Data-Files:          README
 Extra-Source-Files:  test/P192
                    , test/P224
                    , test/P256

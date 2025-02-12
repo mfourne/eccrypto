@@ -43,13 +43,13 @@ main = do
                                     , bench "ECDSAp256 sign" $ whnf (basicecdsa (BS.pack [0..255]) rand) rand
                                     , bench "ECDSAp256 verify" $ whnf (\x -> basicecdsaVerify pub (r,x) (BS.pack [0..255])) s
                                     ]
-              , bgroup "Ed25519" [ bench "sign" $ whnf (benchED sk) 1
-                                 , bench "verify" $ whnf (verifyED pkfix sigfix) 1
+              , bgroup "Ed25519" [ bench "sign" $ nf (benchED sk) $ fromInteger k13'
+                                 , bench "verify" $ nf (verifyED pkfix sigfix) $ fromInteger k13'
                                  ]
               ]
 
-benchED sk n = let m = BS.pack [0..(255+n-n)]
+benchED sk n = let m = BS.pack $ [n, 0..255]
                in ED.dsign sk m
 
-verifyED pk sig n = let m = BS.pack [0..(255+n-n)]
-                in ED.verify pk (BS.append sig m)
+verifyED pk sig n = let m = BS.pack $ [n, 0..255]
+                    in if ED.verify pk (BS.append sig m) == Right ED.SigOK then True else False

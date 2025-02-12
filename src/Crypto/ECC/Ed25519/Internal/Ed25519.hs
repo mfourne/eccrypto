@@ -16,7 +16,7 @@
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -O2 -feager-blackholing #-}
-{-# LANGUAGE Trustworthy, ScopedTypeVariables, NoImplicitPrelude #-}
+{-# LANGUAGE Safe, ScopedTypeVariables, NoImplicitPrelude #-}
 
 module Crypto.ECC.Ed25519.Internal.Ed25519 where
 
